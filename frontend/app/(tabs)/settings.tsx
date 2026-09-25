@@ -18,7 +18,7 @@ export default function SettingsScreen() {
   if (!state) return <View style={styles.center}><Text style={styles.muted}>Loading settings…</Text></View>;
   const save = async () => { setSaving(true); await updateSettings({ weekdayMinutes: Math.max(15, Number(weekday) || 60), saturdayMinutes: Math.max(15, Number(saturday) || 240), sundayMinutes: Math.max(15, Number(sunday) || 240), reminderTime: reminder || "20:30", notificationsEnabled: notifications }); setSaving(false); Alert.alert("Schedule recalculated", "Your future sessions now reflect these settings."); };
   return <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : "height"}><ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: 28 + (usesNativeTabs ? insets.bottom : 0) }]} keyboardShouldPersistTaps="handled">
-    <View><Text style={styles.overline}>Aap Ya Paar / CONTROL ROOM</Text><Text style={styles.title}>Settings</Text><Text style={styles.subtitle}>Tune the plan without breaking the sequence.</Text></View>
+    <View><Text style={styles.overline}>Aar Ya Paar / CONTROL ROOM</Text><Text style={styles.title}>Settings</Text><Text style={styles.subtitle}>Tune the plan without breaking the sequence.</Text></View>
     <SectionTitle eyebrow="CAPACITY" title="Daily minutes" />
     <View style={styles.card}><SettingInput label="WEEKDAYS" value={weekday} onChangeText={setWeekday} /><SettingInput label="SATURDAY" value={saturday} onChangeText={setSaturday} /><SettingInput label="SUNDAY" value={sunday} onChangeText={setSunday} /></View>
     <SectionTitle eyebrow="RHYTHM" title="Reminders" />

@@ -1,7 +1,7 @@
-# Aap Ya Paar — Product Memory
+# Aar Ya Paar — Product Memory
 
 ## Problem statement
-Build a mobile app from the uploaded Aap Ya Paar AI App Specification: a personal, local-first study planner that turns a fixed 9-sprint curriculum into an elastic daily schedule without changing task order.
+Build a mobile app from the uploaded study-plan specification: a personal, local-first study planner that turns a fixed 9-sprint curriculum into an elastic daily schedule without changing task order.
 
 ## Architecture
 - Expo SDK 57 / React Native frontend with Expo Router bottom navigation.
@@ -30,6 +30,7 @@ Build a mobile app from the uploaded Aap Ya Paar AI App Specification: a persona
 - Fixed daily workload stability: checking a task now preserves today’s planned minutes; only Study Ahead can pull additional work into today.
 - Added a reversible Schedule control: unavailable days remember their original unfinished tasks, so restoring a missed day never pulls future-day work into it.
 - Added Phase 1 PDF plan import: private managed source-PDF upload, deterministic Sprint/Day/Task/Time extraction, editable import review, local multi-plan library, and active-plan switcher.
+- Renamed all visible product branding from Aap Ya Paar to Aar Ya Paar while preserving local planner data and storage identifiers.
 
 ## Prioritized backlog
 - P0: Re-run active-plan switching on a physical device after importing a PDF; automated preview picker handoff was intermittent, although import/review/edit/save and plan coexistence passed in QA.
