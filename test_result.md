@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "When restoring a missed day, show only its original unfinished tasks and do not pull in work that was originally scheduled for later days."
+## user_problem_statement: "Add Phase 1 PDF study-plan import with deterministic validation, editable review, multiple local plans, and active-plan switching."
 ## frontend:
   - task: "Expo Go notification compatibility"
     implemented: true
@@ -187,14 +187,43 @@
       - working: true
         agent: "testing"
         comment: "Iteration 2 independently confirmed all 250 tasks and the first Sprint 1 / Day 1 sequence against the PDF."
+  - task: "PDF import and multi-plan library"
+    implemented: true
+    working: false
+    file: "backend/server.py, frontend/app/import-plan.tsx, frontend/app/plans.tsx, frontend/src/app-context.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Built secure private-PDF upload, deterministic Sprint/Day/Task/Time extraction, editable review, local multi-plan storage, and active-plan switching. Backend sample parse returned 250 tasks and stored the source PDF."
+      - working: false
+        agent: "testing"
+        comment: "Iteration 5 found the Review screen crashed because the backend’s snake_case import response was passed directly to camelCase frontend types."
+      - working: "NA"
+        agent: "main"
+        comment: "Added an explicit API response adapter plus null-safe review name handling. Full UI import/save/switch retest required."
+      - working: false
+        agent: "testing"
+        comment: "Iteration 6 still observed the pre-fix Review crash after upload, indicating the preview was serving an older Metro bundle."
+      - working: "NA"
+        agent: "main"
+        comment: "Cleared generated Metro cache and restarted Expo via stop/start after a supervisor port-race recovery."
+      - working: false
+        agent: "testing"
+        comment: "Iteration 7 verified import/review/edit/save and plan coexistence, but could not reliably tap the imported plan’s small Make active CTA on mobile web."
+      - working: "NA"
+        agent: "main"
+        comment: "Replaced the small CTA with one full-card Pressable activation target and removed global LogBox suppression."
 ## metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 4
+  test_sequence: 8
   run_ui: true
 ## test_plan:
   current_focus:
-    - "Restore unavailable day"
+    - "PDF import and multi-plan library"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -209,3 +238,5 @@
     message: "After QA exposed the web Alert callback issue, removed confirmations from the reversible schedule toggle. Preview now passes unavailable → available lifecycle; retest is required."
   - agent: "main"
     message: "User reported restored missed days pulled in future work. The scheduler now restores only the day’s remembered unfinished tasks; independent QA is required."
+  - agent: "main"
+    message: "Phase 1 PDF import and local multi-plan library are implemented. Validate upload/review/save/switch and active-plan isolation."

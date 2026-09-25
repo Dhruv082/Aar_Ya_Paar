@@ -1,0 +1,49 @@
+{
+  "summary": "Frontend-only retest executed on preview URL. Today/plans navigation and new full-card activation entry points are present, but PDF import could not be completed in this automation run, blocking end-to-end switch validation.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Import PDF plan (fresh profile) -> review/edit/save",
+        "issue": "On web preview automation, tapping choose-pdf-button does not emit a Playwright filechooser event; forcing input[type=file] set_input_files does not transition to review state (import-plan-name never appears). In several attempts, console also showed 'Disconnected from Metro (1006)' during import wait.",
+        "affected_testIDs": [
+          "choose-pdf-button",
+          "import-plan-name",
+          "save-import-plan-button"
+        ]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/artifacts_iter9_phase1_switch/01_today_loaded.jpeg",
+    "/app/test_reports/artifacts_iter9_phase1_switch/02_library_final.jpeg",
+    "/app/test_reports/artifacts_iter9_phase1_switch/04_network_diag.jpeg"
+  ],
+  "action_items": [
+    "Investigate DocumentPicker web behavior in preview/headless context: ensure file selection path is testable and reliably updates draft state.",
+    "Check why Metro websocket disconnect warning (1006) appears during import wait and whether it interrupts post-upload UI transition.",
+    "After fixing import handoff, rerun bidirectional active plan switching assertions for make-active-plan-card-{planId} and Today active-plan-switcher text changes."
+  ],
+  "critical_code_review_comments": [
+    "Import flow has no explicit web-test fallback selector/flow beyond DocumentPicker, making reliable automation fragile.",
+    "Frontend env uses EXPO_PUBLIC_BACKEND_URL (not EXPO_BACKEND_URL as platform guideline), creating config drift risk across agents/environments."
+  ],
+  "updated_files": [
+    "/app/test_reports/iteration_8.json"
+  ],
+  "success_rate": {
+    "backend": "NA",
+    "frontend": "45%"
+  },
+  "seed_data_creation": "Downloaded test PDF to /app/test_reports/Aap_Ya_Paar_Complete_Study_Plan.pdf for upload attempts.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "On each browser run, onboarding appears (fresh storage). Use onboarding-continue/onboarding-build-plan first, then active-plan-switcher -> import-pdf-plan-button. Current blocker is import transition after choose-pdf-button.",
+  "rca_of_issue": "Reproduction: open import screen, tap choose-pdf-button, attempt file attach. Observed either (a) no filechooser event, or (b) manual input[type=file] attach with no transition to review state and no import-error visible. Network diagnostic run showed no /api/plans/import-pdf request when using forced input attach path. In other attempts, backend logs showed 200 import responses but UI still did not transition and console logged Metro disconnect 1006. Likely root cause is unstable/non-deterministic web picker integration under current preview automation context."
+}

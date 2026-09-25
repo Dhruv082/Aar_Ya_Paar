@@ -1,0 +1,69 @@
+{
+  "summary": "Backend PDF import endpoint passed deterministic checks; frontend onboarding and plan-library entry passed; PDF import review crashes after file selection due response shape mismatch.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ImportPlanScreen Review",
+        "issue": "App crashes with 'Cannot read properties of undefined (reading trim)' after selecting PDF.",
+        "testID": "choose-pdf-button",
+        "priority": "CRITICAL"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Import PDF -> Review proposed plan",
+        "issue": "Backend returns snake_case fields (suggested_name, source_filename, row_id, total_minutes) but frontend expects camelCase (suggestedName, sourceFilename, rowId, totalMinutes). name becomes undefined and Review render crashes at name.trim().",
+        "affected_testIDs": [
+          "choose-pdf-button",
+          "import-plan-name",
+          "save-import-plan-button"
+        ]
+      },
+      {
+        "flow": "Save imported plan and switch active plan",
+        "issue": "Blocked by import crash; cannot complete save/make-active/isolation verification in UI.",
+        "affected_testIDs": [
+          "save-import-plan-button",
+          "active-plan-switcher"
+        ]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_pdf_import_plan.py",
+    "/app/test_reports/pytest/pytest_results_iter5.xml",
+    "/app/test_reports/artifacts_iter5/initial_load.jpeg",
+    "/app/test_reports/artifacts_iter5/import_limited.jpeg",
+    "/app/test_reports/artifacts_iter5/import_review_not_visible.jpeg"
+  ],
+  "action_items": [
+    "Normalize /api/plans/import-pdf response keys to frontend contract (camelCase) OR map response in frontend uploadPlanPdf before state usage.",
+    "Add defensive defaults before trim calls (e.g., name ?? '' and task.title ?? '').",
+    "After fix, retest full UI flow: import -> edit row -> save new plan -> library shows both plans -> make active both directions without overwriting existing plan progress."
+  ],
+  "critical_code_review_comments": [
+    "Contract mismatch exists between backend Pydantic response keys (snake_case) and frontend Draft/Imported types (camelCase).",
+    "Review component assumes name is always string and calls trim() without guard.",
+    "test_credentials file is present but empty; no auth credentials available (auth flows not tested in this run)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pdf_import_plan.py",
+    "/app/test_reports/iteration_5.json"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "45%"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Onboarding validation passed (Continue x2 -> Build my plan), Today shows active-plan-switcher, Plan Library opens, Import route shows choose-pdf-button. Use the same sample PDF URL; backend is stable with 250 tasks and no parser issues. UI import currently crashes right after picker returns file.",
+  "rca_of_issue": "Repro: open /import-plan -> tap choose-pdf-button -> attach sample PDF. Result: error boundary shows 'Cannot read properties of undefined (reading trim)'. RCA: uploadPlanPdf returns backend JSON directly with snake_case keys; ImportPlanScreen expects camelCase and does setName(next.suggestedName), so name is undefined. Review render then evaluates !name.trim(), causing runtime crash and blocking save/switch/isolation checks.",
+  "test_credentials": "File /app/memory/test_credentials.md exists but contains no credentials; not required for this non-auth flow."
+}

@@ -50,7 +50,6 @@ function Onboarding() {
 
 function CapacityInput({ label, value, onChangeText }: { label: string; value: string; onChangeText: (value: string) => void }) {
   const styles = useStyles();
-  const { colors } = useTheme();
   return <View style={styles.capacityRow}><Text style={styles.inputLabel}>{label}</Text><View style={styles.inputWrap}><TextInput testID={`onboarding-${label.toLowerCase()}`} value={value} onChangeText={onChangeText} keyboardType="number-pad" style={styles.capacityInput} maxLength={3} /><Text style={styles.unit}>MIN</Text></View></View>;
 }
 

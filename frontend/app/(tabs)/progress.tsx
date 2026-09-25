@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { usePlanner } from "@/src/app-context";
 import { Icon, SectionTitle, StatTile } from "@/src/components/planner-ui";
-import { formatDate, getTask } from "@/src/scheduler";
+import { formatDate } from "@/src/scheduler";
 import { makeStyles, useTheme } from "@/src/theme";
 import { usesNativeTabs } from "@/src/navigation";
 

@@ -29,8 +29,10 @@ Build a mobile app from the uploaded Aap Ya Paar AI App Specification: a persona
 - Added Expo Go Android compatibility: notification code now loads only outside Expo Go, preventing a startup crash while retaining notifications for development/production builds.
 - Fixed daily workload stability: checking a task now preserves today’s planned minutes; only Study Ahead can pull additional work into today.
 - Added a reversible Schedule control: unavailable days remember their original unfinished tasks, so restoring a missed day never pulls future-day work into it.
+- Added Phase 1 PDF plan import: private managed source-PDF upload, deterministic Sprint/Day/Task/Time extraction, editable import review, local multi-plan library, and active-plan switcher.
 
 ## Prioritized backlog
+- P0: Re-run active-plan switching on a physical device after importing a PDF; automated preview picker handoff was intermittent, although import/review/edit/save and plan coexistence passed in QA.
 - P0: Add a richer editable date detail modal for custom-capacity overrides.
 - P1: Add native calendar month grid and notification cancellation/update handling.
 - P1: Add curriculum import so users can replace the bundled task set.

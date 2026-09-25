@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { router } from "expo-router";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -9,7 +10,7 @@ import { makeStyles, useTheme } from "@/src/theme";
 import { usesNativeTabs } from "@/src/navigation";
 
 export default function TodayScreen() {
-  const { state, loading, toggleTask, markMissed, studyAhead } = usePlanner();
+  const { state, loading, plans, activePlanId, toggleTask, markMissed, studyAhead } = usePlanner();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useStyles();
@@ -25,10 +26,11 @@ export default function TodayScreen() {
   const firstTask = entries[0] ? getTask(state, entries[0].taskId) : undefined;
   const override = state.dateOverrides.find((item) => item.date === today);
   const sprintLabel = firstTask ? `SPRINT ${firstTask.sprint}  ·  ORIGINAL DAY ${firstTask.originalDay}` : "CURRICULUM COMPLETE";
+  const activePlan = plans.find((plan) => plan.id === activePlanId);
 
   return <View style={styles.screen}>
     <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: 28 + (usesNativeTabs ? insets.bottom : 0) }]} showsVerticalScrollIndicator={false}>
-      <View style={styles.topbar}><View><Text style={styles.overline}>Aap Ya Paar / OPERATIONS</Text><Text style={styles.title}>Today</Text></View><View style={styles.dateBadge}><Text style={styles.dateDay}>{new Date().getDate()}</Text><Text style={styles.dateMonth}>{new Date().toLocaleDateString(undefined, { month: "short" }).toUpperCase()}</Text></View></View>
+      <View style={styles.topbar}><View><Text style={styles.overline}>Aap Ya Paar / OPERATIONS</Text><Text style={styles.title}>Today</Text><Pressable testID="active-plan-switcher" onPress={() => router.push("/plans")} style={styles.planChip}><Icon name="book-open-page-variant" size={13} color={colors.brandPrimary} /><Text style={styles.planChipText}>{activePlan?.name ?? "Study plan"}</Text><Icon name="chevron-right" size={14} color={colors.muted} /></Pressable></View><View style={styles.dateBadge}><Text style={styles.dateDay}>{new Date().getDate()}</Text><Text style={styles.dateMonth}>{new Date().toLocaleDateString(undefined, { month: "short" }).toUpperCase()}</Text></View></View>
       <View style={styles.dateLine}><Icon name="calendar-blank-outline" size={15} color={colors.brandPrimary} /><Text style={styles.dateText}>{formatDate(today)}</Text><Text style={styles.capacityText}>{override?.type === "unavailable" ? "UNAVAILABLE" : `${plannedMinutes} MIN PLANNED`}</Text></View>
       {override?.type === "unavailable" ? <View style={styles.alert}><Icon name="pause-circle-outline" size={18} color={colors.warning} /><Text style={styles.alertText}>{override.reason ?? "Today is unavailable"}. Your plan resumes tomorrow.</Text></View> : null}
       <View style={styles.metrics}><StatTile label="Planned" value={`${plannedMinutes}m`} icon="target" /><StatTile label="Complete" value={`${completedMinutes}m`} accent icon="check-circle-outline" /><StatTile label="Remaining" value={`${remainingMinutes}m`} icon="clock-outline" /></View>
@@ -55,6 +57,8 @@ const useStyles = makeStyles((colors) => ({
   center: { flex: 1, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
   muted: { color: colors.muted, fontSize: 14 },
   topbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  planChip: { marginTop: 8, minHeight: 30, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, borderRadius: 8, backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
+  planChipText: { color: colors.onSurfaceSecondary, fontSize: 10, fontWeight: "800", maxWidth: 160 },
   overline: { color: colors.muted, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
   title: { color: colors.onSurface, fontSize: 34, fontWeight: "900", marginTop: 3 },
   dateBadge: { width: 52, height: 58, backgroundColor: colors.brandPrimary, borderRadius: 10, alignItems: "center", justifyContent: "center" },
