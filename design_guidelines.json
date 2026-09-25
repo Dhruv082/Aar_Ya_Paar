@@ -1,0 +1,151 @@
+{
+  "app_name": "Curriculum Tracker & Study Planner",
+  "personality": "7 Dark-First Utility",
+  "personality_one_liner": "An uncompromising, tactical study operations center built for high-performance curriculum mastery, deterministic pacing, and zero-distraction focus.",
+  "color": {
+    "surface": "#12141C",
+    "onSurface": "#F3F4F6",
+    "surfaceSecondary": "#1A1D26",
+    "onSurfaceSecondary": "#9CA3AF",
+    "surfaceTertiary": "#252836",
+    "onSurfaceTertiary": "#D1D5DB",
+    "surfaceInverse": "#FFFFFF",
+    "onSurfaceInverse": "#12141C",
+    "brand": "#D97706",
+    "brandPrimary": "#F59E0B",
+    "onBrandPrimary": "#12141C",
+    "brandSecondary": "#D97706",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#372B13",
+    "onBrandTertiary": "#FCD34D",
+    "success": "#10B981",
+    "onSuccess": "#FFFFFF",
+    "warning": "#F59E0B",
+    "onWarning": "#12141C",
+    "error": "#EF4444",
+    "onError": "#FFFFFF",
+    "info": "#3B82F6",
+    "onInfo": "#FFFFFF",
+    "border": "#2A2E3D",
+    "borderStrong": "#4B5563",
+    "divider": "#1F2430",
+    "muted": "#9CA3AF",
+    "onBrand": "#12141C"
+  },
+  "typography": {
+    "displayFontFamily": "BarlowCondensed_600SemiBold",
+    "textFontFamily": "Satoshi-Regular",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous and rigorous 4pt grid rhythm with compact operational padding for high glanceability.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": 0,
+  "navigation": "bottom_tabs",
+  "icon_set": "MaterialCommunityIcons",
+  "glassmorphism": {
+    "enabled": false,
+    "do's": ["Use tonal separation, sharp borders, and high-contrast typographic hierarchy."],
+    "dont's": ["Avoid heavy glass blur and soft decorative shadows that reduce operational clarity."]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-blur",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Onboarding",
+      "purpose": "First-launch welcome, curriculum setup, and capacity configuration with zero friction.",
+      "states": {
+        "loading": "Centered amber activity indicator",
+        "empty": "N/A",
+        "error": "Inline validation banner with retry"
+      },
+      "layout": "Full-bleed dark tactical backdrop, progressive step wizard, clean numeric inputs for weekly hours."
+    },
+    {
+      "name": "Dashboard",
+      "purpose": "Today's core sprint tasks, streak status, progress percentage, and deterministic elastic schedule overview.",
+      "states": {
+        "loading": "Skeleton card loader with pulsing amber indicators",
+        "empty": "Icon + 'All curriculum sprints caught up!' + 'Study Ahead' CTA",
+        "error": "Alert banner + 'Retry Persistence Load' button"
+      },
+      "layout": "Top sticky operations header, primary task checklist card stack, progress metrics rail, bottom sticky action bar."
+    },
+    {
+      "name": "Curriculum",
+      "purpose": "Bundled 9-sprint curriculum browser with module details and completion breakdown.",
+      "states": {
+        "loading": "Sprint skeleton stack",
+        "empty": "Empty curriculum state + reload default modules",
+        "error": "Error state with database recovery option"
+      },
+      "layout": "Vertical collapsible sprint accordion list with progress badges and status indicators."
+    },
+    {
+      "name": "Schedule",
+      "purpose": "Calendar view displaying planned days, missed-day handling, future freedom/unavailable days, and Study Ahead controls.",
+      "states": {
+        "loading": "Grid skeleton loader",
+        "empty": "No scheduled sessions found",
+        "error": "Failed to calculate elastic schedule error view"
+      },
+      "layout": "Matrix grid calendar with color-coded day states (completed, active, missed, freedom day, study ahead)."
+    },
+    {
+      "name": "Metrics",
+      "purpose": "Detailed analytics, completion velocity charts, streaks, and curriculum completion metrics.",
+      "states": {
+        "loading": "Chart skeleton pulse",
+        "empty": "Complete your first sprint to unlock analytics",
+        "error": "Metrics calculation error view"
+      },
+      "layout": "Card-based data widgets, progress velocity rings, and summary stat counters."
+    },
+    {
+      "name": "Settings",
+      "purpose": "Weekday/Saturday/Sunday capacity configuration, local notifications toggles, offline persistence backup/restore, and reset progress.",
+      "states": {
+        "loading": "Settings skeleton",
+        "empty": "N/A",
+        "error": "Export/import error fallback"
+      },
+      "layout": "Grouped operational preference rows with switches, steppers, and destructive action controls."
+    }
+  ],
+  "images": {
+    "tactical_bg": {
+      "url": "https://images.unsplash.com/photo-1614292253389-bd2c1f89cd0e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MTJ8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGRhcmslMjB0ZXh0dXJlJTIwbWluaW1hbCUyMHN0dWR5JTIwcGxhbm5lciUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzkwMzYxMzcwfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Dark textured tactical study background"
+    }
+  },
+  "instructions_to_main_agent": "Implement the complete Curriculum Tracker & Study Planner mobile app using Expo and React Native with 100% offline local persistence, bundled 9-sprint curriculum, deterministic elastic scheduling algorithm, task completion tracking, missed-day handling, study ahead, local notifications, JSON export/import, and settings. Strictly adhere to Dark-First Utility personality (Personality #7) with amber (#F59E0B) warm accents, Obsidian surfaces (#12141C / #1A1D26), Barlow Condensed headings, and Satoshi body text. Ensure all touch targets are >=44x44pt, safe areas are respected, and loading/empty/error states are fully handled."
+}
