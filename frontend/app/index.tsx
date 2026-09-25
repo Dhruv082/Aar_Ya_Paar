@@ -42,8 +42,8 @@ function Onboarding() {
       {step === 0 ? <View style={styles.hero}><Text style={styles.kicker}>YOUR CURRICULUM. YOUR PACE.</Text><Text style={styles.title}>Turn study intent into daily momentum.</Text><Text style={styles.body}>Aap Ya Paar keeps your 9-sprint curriculum in order, then reshapes the calendar around the time you actually have.</Text><View style={styles.heroRule}><Icon name="calendar-sync" size={22} color={colors.brandPrimary} /><Text style={styles.ruleText}>Elastic scheduling · offline by default</Text></View></View> : null}
       {step === 1 ? <View style={styles.form}><Text style={styles.kicker}>CAPACITY SETUP</Text><Text style={styles.stepTitle}>How much time can you protect?</Text><Text style={styles.body}>Use minutes per day. You can change these any time.</Text><CapacityInput label="WEEKDAYS" value={weekday} onChangeText={setWeekday} /><CapacityInput label="SATURDAY" value={saturday} onChangeText={setSaturday} /><CapacityInput label="SUNDAY" value={sunday} onChangeText={setSunday} /></View> : null}
       {step === 2 ? <View style={styles.form}><Text style={styles.kicker}>DAILY RHYTHM</Text><Text style={styles.stepTitle}>Choose your reminder time.</Text><Text style={styles.body}>We’ll keep it local. No account, no sync, no noise.</Text><Text style={styles.inputLabel}>REMINDER TIME</Text><TextInput value={reminder} onChangeText={setReminder} placeholder="20:30" placeholderTextColor={colors.muted} style={styles.timeInput} keyboardType="numbers-and-punctuation" /><View style={styles.preview}><Icon name="bell-outline" size={20} color={colors.brandPrimary} /><View><Text style={styles.previewTitle}>Your first session</Text><Text style={styles.previewText}>Starts with Sprint 1 · 60 minute weekday plan</Text></View></View></View> : null}
-      <View style={styles.footer}><Text style={styles.stepCount}>0{step + 1} / 03</Text><ActionButton label={saving ? "Building plan…" : step === 2 ? "Build my plan" : "Continue"} icon={step === 2 ? "rocket-launch-outline" : "arrow-right"} onPress={() => void next()} disabled={saving} /></View>
-      {step > 0 ? <Pressable onPress={() => setStep(step - 1)} style={styles.back}><Text style={styles.backText}>Back</Text></Pressable> : null}
+      <View style={styles.footer}><Text style={styles.stepCount}>0{step + 1} / 03</Text><ActionButton testID={step === 2 ? "onboarding-build-plan" : "onboarding-continue"} label={saving ? "Building plan…" : step === 2 ? "Build my plan" : "Continue"} icon={step === 2 ? "rocket-launch-outline" : "arrow-right"} onPress={() => void next()} disabled={saving} /></View>
+      {step > 0 ? <Pressable testID="onboarding-back" onPress={() => setStep(step - 1)} style={styles.back}><Text style={styles.backText}>Back</Text></Pressable> : null}
     </ScrollView>
   </KeyboardAvoidingView>;
 }
@@ -51,7 +51,7 @@ function Onboarding() {
 function CapacityInput({ label, value, onChangeText }: { label: string; value: string; onChangeText: (value: string) => void }) {
   const styles = useStyles();
   const { colors } = useTheme();
-  return <View style={styles.capacityRow}><Text style={styles.inputLabel}>{label}</Text><View style={styles.inputWrap}><TextInput value={value} onChangeText={onChangeText} keyboardType="number-pad" style={styles.capacityInput} maxLength={3} /><Text style={styles.unit}>MIN</Text></View></View>;
+  return <View style={styles.capacityRow}><Text style={styles.inputLabel}>{label}</Text><View style={styles.inputWrap}><TextInput testID={`onboarding-${label.toLowerCase()}`} value={value} onChangeText={onChangeText} keyboardType="number-pad" style={styles.capacityInput} maxLength={3} /><Text style={styles.unit}>MIN</Text></View></View>;
 }
 
 const useStyles = makeStyles((colors) => ({

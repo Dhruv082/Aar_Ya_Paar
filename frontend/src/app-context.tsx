@@ -1,5 +1,5 @@
 import * as Clipboard from "expo-clipboard";
-import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Alert, Platform } from "react-native";
 
@@ -8,6 +8,14 @@ import { buildSchedule, createInitialState, dateKey, DEFAULT_SETTINGS, PlannerSt
 
 const STORAGE_KEY = "aap_ya_paar_state_v1";
 type Settings = PlannerState["settings"];
+type NotificationsModule = typeof import("expo-notifications");
+
+async function getNotifications(): Promise<NotificationsModule | null> {
+  const isExpoGoAndroid = Platform.OS === "android" && Constants.executionEnvironment === "storeClient";
+  if (Platform.OS === "web" || isExpoGoAndroid) return null;
+  return import("expo-notifications");
+}
+
 type PlannerContextValue = {
   state: PlannerState | null;
   loading: boolean;
@@ -84,11 +92,12 @@ export function PlannerProvider({ children }: PropsWithChildren) {
   const updateSettings = useCallback(async (settings: Settings) => {
     if (!state) return;
     await persist(withSchedule({ ...state, settings }));
-    if (settings.notificationsEnabled && Platform.OS !== "web") {
-      const permissions = await Notifications.getPermissionsAsync();
-      if (!permissions.granted) await Notifications.requestPermissionsAsync();
+    const notifications = await getNotifications();
+    if (settings.notificationsEnabled && notifications) {
+      const permissions = await notifications.getPermissionsAsync();
+      if (!permissions.granted) await notifications.requestPermissionsAsync();
       const [hour, minute] = settings.reminderTime.split(":").map(Number);
-      await Notifications.scheduleNotificationAsync({
+      await notifications.scheduleNotificationAsync({
         content: { title: "Aap Ya Paar", body: "Time to study. Your next task is waiting." },
         trigger: { hour, minute, repeats: true } as any,
       });

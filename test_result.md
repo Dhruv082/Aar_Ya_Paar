@@ -101,3 +101,37 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+## user_problem_statement: "Fix Expo Go Android crash caused by expo-notifications loading at startup."
+## frontend:
+  - task: "Expo Go notification compatibility"
+    implemented: true
+    working: true
+    file: "frontend/src/app-context.tsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Expo Go on Android throws an uncaught expo-notifications error while loading app-context.tsx."
+      - working: "NA"
+        agent: "main"
+        comment: "Replaced the startup-level notification import with a lazy, Expo Go Android-safe loader."
+      - working: true
+        agent: "main"
+        comment: "Lint passed and mobile preview successfully rendered the onboarding screen after the fix."
+## metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+## test_plan:
+  current_focus:
+    - "Expo Go notification compatibility"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+## agent_communication:
+  - agent: "main"
+    message: "User-reported Expo Go Android startup issue is fixed in app-context.tsx and needs UI verification."

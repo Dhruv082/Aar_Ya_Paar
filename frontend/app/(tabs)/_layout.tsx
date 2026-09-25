@@ -19,10 +19,10 @@ export default function TabsLayout() {
     </NativeTabs>;
   }
   return <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: colors.brandPrimary, tabBarInactiveTintColor: colors.muted, tabBarStyle: { backgroundColor: colors.surfaceSecondary, borderTopColor: colors.border, ...(Platform.OS === "web" ? { height: 64 } : {}) }, tabBarItemStyle: { alignSelf: "center" } }}>
-    <Tabs.Screen name="index" options={{ title: "Today", tabBarIcon: ({ color }) => <TabsIcon name="home" color={color} /> }} />
-    <Tabs.Screen name="schedule" options={{ title: "Schedule", tabBarIcon: ({ color }) => <TabsIcon name="calendar" color={color} /> }} />
-    <Tabs.Screen name="progress" options={{ title: "Progress", tabBarIcon: ({ color }) => <TabsIcon name="chart-bar" color={color} /> }} />
-    <Tabs.Screen name="settings" options={{ title: "Settings", tabBarIcon: ({ color }) => <TabsIcon name="cog" color={color} /> }} />
+    <Tabs.Screen name="index" options={{ title: "Today", tabBarButtonTestID: "tab-today", tabBarIcon: ({ color }) => <TabsIcon name="home" color={color} /> }} />
+    <Tabs.Screen name="schedule" options={{ title: "Schedule", tabBarButtonTestID: "tab-schedule", tabBarIcon: ({ color }) => <TabsIcon name="calendar" color={color} /> }} />
+    <Tabs.Screen name="progress" options={{ title: "Progress", tabBarButtonTestID: "tab-progress", tabBarIcon: ({ color }) => <TabsIcon name="chart-bar" color={color} /> }} />
+    <Tabs.Screen name="settings" options={{ title: "Settings", tabBarButtonTestID: "tab-settings", tabBarIcon: ({ color }) => <TabsIcon name="cog" color={color} /> }} />
   </Tabs>;
 }
 

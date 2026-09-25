@@ -11,9 +11,9 @@ export function Icon({ name, size = 20, color }: { name: IconName; size?: number
   return <MaterialCommunityIcons name={name} size={size} color={color ?? colors.onSurface} />;
 }
 
-export function ActionButton({ label, icon, onPress, secondary = false, disabled = false }: { label: string; icon?: IconName; onPress: () => void; secondary?: boolean; disabled?: boolean }) {
+export function ActionButton({ label, icon, onPress, secondary = false, disabled = false, testID }: { label: string; icon?: IconName; onPress: () => void; secondary?: boolean; disabled?: boolean; testID?: string }) {
   const styles = useStyles();
-  return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, secondary && styles.secondaryButton, disabled && styles.disabledButton, pressed && styles.pressed]}>
+  return <Pressable testID={testID} accessibilityRole="button" disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, secondary && styles.secondaryButton, disabled && styles.disabledButton, pressed && styles.pressed]}>
     {icon ? <Icon name={icon} size={18} color={secondary ? undefined : styles.buttonText.color} /> : null}
     <Text style={secondary ? styles.secondaryButtonText : styles.buttonText}>{label}</Text>
   </Pressable>;
@@ -34,7 +34,7 @@ export function TaskCard({ entry, state, onToggle }: { entry: ScheduleEntry; sta
   const task = getTask(state, entry.taskId);
   if (!task) return null;
   const complete = entry.state === "completed";
-  return <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: complete }} onPress={onToggle} style={({ pressed }) => [styles.taskCard, pressed && styles.pressed]}>
+  return <Pressable testID={`task-card-${task.id}`} accessibilityRole="checkbox" accessibilityState={{ checked: complete }} onPress={onToggle} style={({ pressed }) => [styles.taskCard, pressed && styles.pressed]}>
     <View style={[styles.checkbox, complete && { backgroundColor: colors.success, borderColor: colors.success }]}>{complete ? <Icon name="check" size={16} color={colors.onSuccess} /> : null}</View>
     <View style={styles.taskBody}><Text style={[styles.taskTitle, complete && styles.completedText]}>{task.title}</Text><Text style={styles.taskMeta}>SPRINT {task.sprint}  /  ORIGINAL DAY {task.originalDay}</Text></View>
     <Text style={styles.taskMinutes}>{task.estimatedMinutes}m</Text>
