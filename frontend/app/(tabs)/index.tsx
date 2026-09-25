@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { usePlanner } from "@/src/app-context";
@@ -35,7 +35,7 @@ export default function TodayScreen() {
       <View style={styles.progressBar}><View style={[styles.progressFill, { width: `${plannedMinutes ? Math.min(100, (completedMinutes / plannedMinutes) * 100) : 0}%` }]} /></View>
       <SectionTitle eyebrow={sprintLabel} title={entries.length ? "Today's work" : "Clear runway"} action="Curriculum" onAction={() => setShowCurriculum(true)} />
       {entries.length ? <View style={styles.tasks}>{entries.map((entry) => <TaskCard key={`${entry.date}-${entry.taskId}`} entry={entry} state={state} onToggle={() => void toggleTask(entry.taskId)} />)}</View> : <EmptyState icon="check-decagram-outline" title="All curriculum sprints caught up!" message="You have cleared today's runway. Use Study Ahead to pull in the next challenge." />}
-      <View style={styles.actions}>{allTodayDone && pendingCount > 0 ? <ActionButton label="Study Ahead +60m" icon="fast-forward" onPress={() => void studyAhead()} /> : null}<ActionButton label="Handle missed day" icon="calendar-remove-outline" onPress={() => Alert.alert("Handle missed day?", "Unfinished work will move to the next available study day.", [{ text: "Cancel", style: "cancel" }, { text: "Mark missed", style: "destructive", onPress: () => void markMissed() }])} secondary /></View>
+      <View style={styles.actions}>{allTodayDone && pendingCount > 0 ? <ActionButton testID="study-ahead-button" label="Study Ahead +60m" icon="fast-forward" onPress={() => void studyAhead()} /> : null}<ActionButton testID="handle-missed-day-button" label="Handle missed day" icon="calendar-remove-outline" onPress={() => void markMissed()} secondary /></View>
       <View style={styles.footerNote}><Icon name="shield-check-outline" size={16} color={colors.success} /><Text style={styles.footerText}>Local-first · schedule version {state.scheduleVersion}</Text></View>
     </ScrollView>
     <CurriculumModal visible={showCurriculum} onClose={() => setShowCurriculum(false)} state={state} />

@@ -10,7 +10,7 @@ export type Task = {
 };
 
 export type CompletionRecord = { taskId: string; completedAt: string };
-export type DateOverride = { date: string; type: "unavailable" | "custom_capacity"; capacityMinutes?: number; reason?: string };
+export type DateOverride = { date: string; type: "unavailable" | "custom_capacity"; capacityMinutes?: number; reason?: string; reservedTaskIds?: string[] };
 export type Settings = { weekdayMinutes: number; saturdayMinutes: number; sundayMinutes: number; reminderTime: string; notificationsEnabled: boolean };
 export type ScheduleEntry = { date: string; taskId: string; plannedMinutes: number; state: "scheduled" | "completed" | "carried_forward" };
 
@@ -102,6 +102,18 @@ export function rescheduleFrom(state: PlannerState, start: string): ScheduleEntr
   const pending = state.tasks.filter((task) => !completed.has(task.id) && !lockedIds.has(task.id));
   const rebuilt = buildSchedule({ ...state, tasks: pending }, start);
   return [...locked, ...rebuilt].sort((a, b) => a.date.localeCompare(b.date) || state.tasks.find((task) => task.id === a.taskId)!.sequence - state.tasks.find((task) => task.id === b.taskId)!.sequence);
+}
+
+export function restoreUnavailableDay(state: PlannerState, date: string, reservedTaskIds: string[]): ScheduleEntry[] {
+  const completed = new Set(state.completionRecords.map((record) => record.taskId));
+  const reserved = new Set(reservedTaskIds.filter((taskId) => !completed.has(taskId)));
+  const locked = state.schedule.filter((entry) => completed.has(entry.taskId) || entry.date < date);
+  const lockedIds = new Set(locked.map((entry) => entry.taskId));
+  const restored = state.tasks.filter((task) => reserved.has(task.id) && !lockedIds.has(task.id)).map((task) => ({ date, taskId: task.id, plannedMinutes: task.estimatedMinutes, state: date === dateKey() ? "carried_forward" as const : "scheduled" as const }));
+  const excluded = new Set([...lockedIds, ...reserved]);
+  const remaining = state.tasks.filter((task) => !completed.has(task.id) && !excluded.has(task.id));
+  const rebuilt = buildSchedule({ ...state, tasks: remaining }, addDays(date, 1));
+  return [...locked, ...restored, ...rebuilt].sort((a, b) => a.date.localeCompare(b.date) || state.tasks.find((task) => task.id === a.taskId)!.sequence - state.tasks.find((task) => task.id === b.taskId)!.sequence);
 }
 
 export function createInitialState(): PlannerState {

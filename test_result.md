@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "Fix daily-plan expansion after completion, allow unavailable dates to be restored, and align curriculum order with the supplied study-plan PDF."
+## user_problem_statement: "When restoring a missed day, show only its original unfinished tasks and do not pull in work that was originally scheduled for later days."
 ## frontend:
   - task: "Expo Go notification compatibility"
     implemented: true
@@ -142,7 +142,7 @@
     implemented: true
     working: true
     file: "frontend/src/app-context.tsx, frontend/app/(tabs)/schedule.tsx"
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
     needs_retesting: false
     status_history:
@@ -161,6 +161,15 @@
       - working: true
         agent: "testing"
         comment: "Iteration 3 independently verified the full unavailable → available lifecycle on a future day."
+      - working: false
+        agent: "user"
+        comment: "Restoring a missed day pulled a group of tasks from the next day instead of only the item that had been left on the missed day."
+      - working: "NA"
+        agent: "main"
+        comment: "Unavailable overrides now preserve their original unfinished task IDs. Restoring the date returns those IDs only, then rebuilds all other pending work from the next date."
+      - working: true
+        agent: "testing"
+        comment: "Iteration 4 independently confirmed a restored missed day returned only its original unfinished task and did not pull in the next-day task."
   - task: "PDF curriculum order"
     implemented: true
     working: true
@@ -181,7 +190,7 @@
 ## metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 3
+  test_sequence: 4
   run_ui: true
 ## test_plan:
   current_focus:
@@ -198,3 +207,5 @@
     message: "Replaced the curriculum with the PDF’s 250 ordered tasks, preserved today’s scheduled workload on completion, and added Mark available for unavailable days. Independent QA required."
   - agent: "main"
     message: "After QA exposed the web Alert callback issue, removed confirmations from the reversible schedule toggle. Preview now passes unavailable → available lifecycle; retest is required."
+  - agent: "main"
+    message: "User reported restored missed days pulled in future work. The scheduler now restores only the day’s remembered unfinished tasks; independent QA is required."

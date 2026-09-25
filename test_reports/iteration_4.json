@@ -1,0 +1,34 @@
+{
+  "summary": "Frontend-only mobile regression retest passed on preview URL. Fresh onboarding with weekday 60m, missed-day lifecycle, and restore flow behaved correctly: only original unfinished task returned to Today.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_4.json",
+    "/app/test_reports/artifacts_iter4/load_state.jpeg",
+    "/app/test_reports/artifacts_iter4/post_restore_today.jpeg"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "In /app/frontend/app/_layout.tsx, LogBox.ignoreAllLogs(true) suppresses runtime warnings globally, which can hide regressions during QA and production diagnostics."
+  ],
+  "updated_files": [
+    "/app/test_reports/iteration_4.json"
+  ],
+  "success_rate": {
+    "backend": "not tested (frontend-only request)",
+    "frontend": "100% (4/4 requested checks passed)"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Tested on https://doc2app-4.preview.emergentagent.com with mobile viewport 375x667. Cleared web local state (localStorage/sessionStorage/indexedDB), completed onboarding (weekday=60), verified Today initially had s1-d1-t1 and s1-d1-t2 only (no s1-d1-t3), completed s1-d1-t1, used handle-missed-day-button, restored today from Schedule via mark-available-button, and confirmed Today showed s1-d1-t2 unfinished plus s1-d1-t1 completed, with no s1-d1-t3 pulled in.",
+  "rca_of_issue": "Validated the new reservedTaskIds-based restore path. markMissed preserved today's unfinished task IDs, and markAvailable restored only those IDs for the selected day while rebuilding other pending tasks from following dates, preventing future-task bleed into restored Today."
+}

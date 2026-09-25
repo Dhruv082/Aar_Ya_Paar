@@ -4,7 +4,7 @@ import { PropsWithChildren, createContext, useCallback, useContext, useEffect, u
 import { Alert, Platform } from "react-native";
 
 import { storage } from "@/src/utils/storage";
-import { addDays, buildSchedule, createInitialState, CURRICULUM, dateKey, DEFAULT_SETTINGS, PlannerState, rescheduleFrom, ScheduleEntry } from "@/src/scheduler";
+import { addDays, buildSchedule, createInitialState, CURRICULUM, dateKey, DEFAULT_SETTINGS, PlannerState, rescheduleFrom, restoreUnavailableDay, ScheduleEntry } from "@/src/scheduler";
 
 const STORAGE_KEY = "aap_ya_paar_state_v1";
 type Settings = PlannerState["settings"];
@@ -88,22 +88,28 @@ export function PlannerProvider({ children }: PropsWithChildren) {
   const markMissed = useCallback(async () => {
     if (!state) return;
     const today = dateKey();
-    const dateOverrides = [...state.dateOverrides.filter((item) => item.date !== today), { date: today, type: "unavailable" as const, reason: "Missed study day" }];
+    const reservedTaskIds = state.schedule.filter((entry) => entry.date === today && entry.state !== "completed").map((entry) => entry.taskId);
+    const dateOverrides = [...state.dateOverrides.filter((item) => item.date !== today), { date: today, type: "unavailable" as const, reason: "Missed study day", reservedTaskIds }];
     const next = { ...state, dateOverrides };
     await persist(withSchedule(next, rescheduleFrom(next, addDays(today, 1))));
   }, [persist, state]);
 
   const markUnavailable = useCallback(async (date: string, reason = "Freedom day") => {
     if (!state) return;
-    const dateOverrides = [...state.dateOverrides.filter((item) => item.date !== date), { date, type: "unavailable" as const, reason }];
+    const existing = state.dateOverrides.find((item) => item.date === date);
+    const reservedTaskIds = existing?.reservedTaskIds ?? state.schedule.filter((entry) => entry.date === date && entry.state !== "completed").map((entry) => entry.taskId);
+    const dateOverrides = [...state.dateOverrides.filter((item) => item.date !== date), { date, type: "unavailable" as const, reason, reservedTaskIds }];
     const next = { ...state, dateOverrides };
     await persist(withSchedule(next, rescheduleFrom(next, date)));
   }, [persist, state]);
 
   const markAvailable = useCallback(async (date: string) => {
     if (!state) return;
+    const override = state.dateOverrides.find((item) => item.date === date);
+    const fallbackTask = state.schedule.find((entry) => entry.date >= date && entry.state !== "completed")?.taskId;
+    const reservedTaskIds = override?.reservedTaskIds?.length ? override.reservedTaskIds : fallbackTask ? [fallbackTask] : [];
     const next = { ...state, dateOverrides: state.dateOverrides.filter((item) => item.date !== date) };
-    await persist(withSchedule(next, rescheduleFrom(next, date)));
+    await persist(withSchedule(next, reservedTaskIds.length ? restoreUnavailableDay(next, date, reservedTaskIds) : rescheduleFrom(next, date)));
   }, [persist, state]);
 
   const studyAhead = useCallback(async () => {
