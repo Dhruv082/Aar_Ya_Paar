@@ -24,9 +24,11 @@ Build a mobile app from the uploaded Aap Ya Paar AI App Specification: a persona
 ## Implemented 2026-09-25
 - Built dark-first amber tactical mobile UI based on `/app/design_guidelines.json`.
 - Added onboarding, Today, Schedule, Progress, Settings, curriculum modal, safe-area handling, Android-first touch targets, and stable regression test IDs.
-- Added deterministic 36-task / 9-sprint curriculum, local persistence, schedule recalculation, task completion, missed/unavailable day logic, Study Ahead, reminder scheduling, JSON clipboard export/import, and reset flow.
+- Added the PDF-aligned 250-task curriculum with immutable sprint/day/source order, local persistence, schedule recalculation, task completion, missed/unavailable day logic, Study Ahead, reminder scheduling, JSON clipboard export/import, and reset flow.
 - Verified with ESLint, TypeScript, Expo preview smoke checks, and frontend QA iteration 1; onboarding, task interaction, all four tabs, settings, backup controls, and overflow checks passed.
 - Added Expo Go Android compatibility: notification code now loads only outside Expo Go, preventing a startup crash while retaining notifications for development/production builds.
+- Fixed daily workload stability: checking a task now preserves today’s planned minutes; only Study Ahead can pull additional work into today.
+- Added a reversible Schedule control: future unavailable days can be marked available again and reflow from that date.
 
 ## Prioritized backlog
 - P0: Add a richer editable date detail modal for custom-capacity overrides.

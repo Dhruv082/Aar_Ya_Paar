@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "Fix Expo Go Android crash caused by expo-notifications loading at startup."
+## user_problem_statement: "Fix daily-plan expansion after completion, allow unavailable dates to be restored, and align curriculum order with the supplied study-plan PDF."
 ## frontend:
   - task: "Expo Go notification compatibility"
     implemented: true
@@ -121,17 +121,80 @@
       - working: true
         agent: "main"
         comment: "Lint passed and mobile preview successfully rendered the onboarding screen after the fix."
+  - task: "Stable planned minutes after task completion"
+    implemented: true
+    working: true
+    file: "frontend/src/app-context.tsx, frontend/src/scheduler.ts"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Checking a task caused extra tasks to be pulled into today and increased planned minutes."
+      - working: "NA"
+        agent: "main"
+        comment: "Completion now preserves the existing schedule; Study Ahead is the only action that reflows today. Self-check held 225m before and after a check-off."
+      - working: true
+        agent: "testing"
+        comment: "Iteration 2 independently confirmed planned minutes remained 225m before and after the first completion."
+  - task: "Restore unavailable day"
+    implemented: true
+    working: true
+    file: "frontend/src/app-context.tsx, frontend/app/(tabs)/schedule.tsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "An unavailable day could not be made available again."
+      - working: "NA"
+        agent: "main"
+        comment: "Added the Mark available control and rescheduling from the selected date."
+      - working: false
+        agent: "testing"
+        comment: "Iteration 2 found Alert confirmation callbacks did not execute in web preview, so unavailable state was never set."
+      - working: "NA"
+        agent: "main"
+        comment: "Removed the unreliable Alert confirmation layer; the reversible mark-unavailable and mark-available actions now execute directly."
+      - working: true
+        agent: "testing"
+        comment: "Iteration 3 independently verified the full unavailable → available lifecycle on a future day."
+  - task: "PDF curriculum order"
+    implemented: true
+    working: true
+    file: "frontend/src/curriculum.ts, frontend/src/scheduler.ts"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "The displayed question list and ordering did not match the uploaded study plan."
+      - working: "NA"
+        agent: "main"
+        comment: "Installed the full 250-task PDF sequence with source sprint, day, and minute estimates."
+      - working: true
+        agent: "testing"
+        comment: "Iteration 2 independently confirmed all 250 tasks and the first Sprint 1 / Day 1 sequence against the PDF."
 ## metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 1
+  test_sequence: 3
   run_ui: true
 ## test_plan:
   current_focus:
-    - "Expo Go notification compatibility"
+    - "Restore unavailable day"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 ## agent_communication:
   - agent: "main"
     message: "User-reported Expo Go Android startup issue is fixed in app-context.tsx and needs UI verification."
+  - agent: "user"
+    message: "Reported that completing today’s work increases planned minutes, unavailable days cannot be restored, and the question sequence does not follow the uploaded PDF."
+  - agent: "main"
+    message: "Replaced the curriculum with the PDF’s 250 ordered tasks, preserved today’s scheduled workload on completion, and added Mark available for unavailable days. Independent QA required."
+  - agent: "main"
+    message: "After QA exposed the web Alert callback issue, removed confirmations from the reversible schedule toggle. Preview now passes unavailable → available lifecycle; retest is required."

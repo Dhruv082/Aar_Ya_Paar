@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { usePlanner } from "@/src/app-context";
@@ -9,23 +9,24 @@ import { makeStyles, useTheme } from "@/src/theme";
 import { usesNativeTabs } from "@/src/navigation";
 
 export default function ScheduleScreen() {
-  const { state, markUnavailable } = usePlanner();
+  const { state, markAvailable, markUnavailable } = usePlanner();
   const insets = useSafeAreaInsets();
   const styles = useStyles();
   const { colors } = useTheme();
   const [selected, setSelected] = useState(dateKey());
-  if (!state) return <View style={styles.center}><Text style={styles.muted}>Loading schedule…</Text></View>;
   const today = dateKey();
   const days = useMemo(() => Array.from({ length: 21 }, (_, index) => addDays(today, index)), [today]);
+  if (!state) return <View style={styles.center}><Text style={styles.muted}>Loading schedule…</Text></View>;
   const projected = state.schedule[state.schedule.length - 1]?.date ?? today;
   const selectedEntries = state.schedule.filter((entry) => entry.date === selected);
   const selectedOverride = state.dateOverrides.find((item) => item.date === selected);
+  const canEditSelectedDay = selected >= today;
   return <View style={styles.screen}><ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: 28 + (usesNativeTabs ? insets.bottom : 0) }]} showsVerticalScrollIndicator={false}>
     <View style={styles.header}><View><Text style={styles.overline}>Aap Ya Paar / TIMELINE</Text><Text style={styles.title}>Schedule</Text></View><View style={styles.projected}><Text style={styles.projectedLabel}>PROJECTED FINISH</Text><Text style={styles.projectedValue}>{formatDate(projected, { month: "short", day: "numeric", year: "numeric" })}</Text></View></View>
     <View style={styles.legend}><Legend color={colors.brandPrimary} label="Planned" /><Legend color={colors.success} label="Complete" /><Legend color={colors.error} label="Unavailable" /></View>
     <SectionTitle eyebrow="NEXT 21 DAYS" title="Your runway" />
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayRail}>{days.map((day) => { const entries = state.schedule.filter((entry) => entry.date === day); const override = state.dateOverrides.find((item) => item.date === day); const done = entries.length > 0 && entries.every((entry) => entry.state === "completed"); const active = day === selected; return <Pressable testID={`schedule-day-${day}`} key={day} onPress={() => setSelected(day)} style={[styles.dayCell, active && styles.dayCellActive, override?.type === "unavailable" && styles.dayCellUnavailable]}><Text style={[styles.dayWeek, active && styles.activeText]}>{formatDate(day, { weekday: "short" }).toUpperCase()}</Text><Text style={[styles.dayNumber, active && styles.activeText]}>{new Date(`${day}T12:00:00`).getDate()}</Text><View style={[styles.dot, { backgroundColor: override?.type === "unavailable" ? colors.error : done ? colors.success : entries.length ? colors.brandPrimary : colors.borderStrong }]} /></Pressable>; })}</ScrollView>
-    <View style={styles.detailCard}><View style={styles.detailTop}><View><Text style={styles.detailEyebrow}>{selected === today ? "TODAY" : selected < today ? "PAST" : "UPCOMING"}</Text><Text style={styles.detailTitle}>{formatDate(selected, { weekday: "long", month: "long", day: "numeric" })}</Text></View>{selectedOverride ? <View style={styles.unavailablePill}><Text style={styles.unavailableText}>UNAVAILABLE</Text></View> : null}</View>{selectedEntries.length ? <View style={styles.entryList}>{selectedEntries.map((entry) => { const task = getTask(state, entry.taskId); return <View key={entry.taskId} style={styles.entry}><Icon name={entry.state === "completed" ? "check-circle" : "circle-outline"} size={19} color={entry.state === "completed" ? colors.success : colors.brandPrimary} /><Text style={[styles.entryTitle, entry.state === "completed" && styles.done]}>{task?.title}</Text><Text style={styles.entryMinutes}>{entry.plannedMinutes}m</Text></View>; })}</View> : <Text style={styles.emptyText}>{selectedOverride ? selectedOverride.reason : "No tasks are assigned to this day."}</Text>}{selected > today && !selectedOverride ? <ActionButton label="Mark unavailable" icon="calendar-remove-outline" secondary onPress={() => Alert.alert("Mark this day unavailable?", "The scheduler will move pending tasks around it.", [{ text: "Cancel", style: "cancel" }, { text: "Mark unavailable", style: "destructive", onPress: () => void markUnavailable(selected) }])} /> : null}</View>
+    <View style={styles.detailCard}><View style={styles.detailTop}><View><Text style={styles.detailEyebrow}>{selected === today ? "TODAY" : selected < today ? "PAST" : "UPCOMING"}</Text><Text style={styles.detailTitle}>{formatDate(selected, { weekday: "long", month: "long", day: "numeric" })}</Text></View>{selectedOverride ? <View style={styles.unavailablePill}><Text style={styles.unavailableText}>UNAVAILABLE</Text></View> : null}</View>{selectedEntries.length ? <View style={styles.entryList}>{selectedEntries.map((entry) => { const task = getTask(state, entry.taskId); return <View key={entry.taskId} style={styles.entry}><Icon name={entry.state === "completed" ? "check-circle" : "circle-outline"} size={19} color={entry.state === "completed" ? colors.success : colors.brandPrimary} /><Text style={[styles.entryTitle, entry.state === "completed" && styles.done]}>{task?.title}</Text><Text style={styles.entryMinutes}>{entry.plannedMinutes}m</Text></View>; })}</View> : <Text style={styles.emptyText}>{selectedOverride ? selectedOverride.reason : "No tasks are assigned to this day."}</Text>}{canEditSelectedDay && selectedOverride ? <ActionButton testID="mark-available-button" label="Mark available" icon="calendar-check-outline" secondary onPress={() => void markAvailable(selected)} /> : null}{selected > today && !selectedOverride ? <ActionButton testID="mark-unavailable-button" label="Mark unavailable" icon="calendar-remove-outline" secondary onPress={() => void markUnavailable(selected)} /> : null}</View>
   </ScrollView></View>;
 }
 

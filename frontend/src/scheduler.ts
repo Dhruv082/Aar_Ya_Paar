@@ -1,3 +1,5 @@
+import { STUDY_PLAN } from "@/src/curriculum";
+
 export type Task = {
   id: string;
   sprint: number;
@@ -14,6 +16,7 @@ export type ScheduleEntry = { date: string; taskId: string; plannedMinutes: numb
 
 export type PlannerState = {
   initialized: boolean;
+  curriculumVersion: number;
   tasks: Task[];
   completionRecords: CompletionRecord[];
   dateOverrides: DateOverride[];
@@ -24,28 +27,15 @@ export type PlannerState = {
   lastRecalculatedAt: string;
 };
 
-const sprintTopics = [
-  ["Arrays & Hashing", ["Set Matrix Zeroes", "Majority Element-II", "Longest Consecutive Sequence", "Subarray Sum Equals K"]],
-  ["Two Pointers", ["Valid Palindrome", "3Sum", "Container With Most Water", "Trapping Rain Water"]],
-  ["Binary Search", ["Search in Rotated Array", "Find Peak Element", "Median of Two Sorted Arrays", "Koko Eating Bananas"]],
-  ["Linked Lists", ["Reverse Linked List", "Detect Cycle", "Merge K Sorted Lists", "LRU Cache"]],
-  ["Stacks & Queues", ["Valid Parentheses", "Min Stack", "Largest Rectangle", "Sliding Window Maximum"]],
-  ["Trees", ["Maximum Depth", "Level Order Traversal", "Lowest Common Ancestor", "Serialize a Binary Tree"]],
-  ["Graphs", ["Number of Islands", "Clone Graph", "Course Schedule", "Word Ladder"]],
-  ["Dynamic Programming", ["Climbing Stairs", "House Robber", "Coin Change", "Longest Common Subsequence"]],
-  ["Advanced Patterns", ["Backtracking Combinations", "N-Queens", "Union Find", "System Design Review"]],
-];
-
-export const CURRICULUM: Task[] = sprintTopics.flatMap(([topic, titles], sprintIndex) =>
-  (titles as string[]).map((title, dayIndex) => ({
-    id: `s${sprintIndex + 1}-d${dayIndex + 1}`,
-    sprint: sprintIndex + 1,
-    originalDay: dayIndex + 1,
-    sequence: sprintIndex * 4 + dayIndex + 1,
-    title,
-    estimatedMinutes: [25, 35, 45, 30][dayIndex],
-  })),
-);
+let sequence = 0;
+export const CURRICULUM: Task[] = STUDY_PLAN.flatMap((sprint, sprintIndex) => sprint.flatMap((day, dayIndex) => day.map(([title, estimatedMinutes], taskIndex) => ({
+  id: `s${sprintIndex + 1}-d${dayIndex + 1}-t${taskIndex + 1}`,
+  sprint: sprintIndex + 1,
+  originalDay: dayIndex + 1,
+  sequence: ++sequence,
+  title,
+  estimatedMinutes,
+}))));
 
 export const DEFAULT_SETTINGS: Settings = { weekdayMinutes: 60, saturdayMinutes: 240, sundayMinutes: 240, reminderTime: "20:30", notificationsEnabled: false };
 
@@ -89,7 +79,7 @@ export function buildSchedule(state: Pick<PlannerState, "tasks" | "completionRec
   while (taskIndex < pending.length && guard < 900) {
     const override = overrides.get(cursor);
     const day = dateFromKey(cursor);
-    const available = override?.type === "unavailable" ? 0 : override?.capacityMinutes ?? capacityFor(day, state.settings) + (state.extraCapacity[cursor] ?? 0);
+    const available = override?.type === "unavailable" ? 0 : (override?.capacityMinutes ?? capacityFor(day, state.settings)) + (state.extraCapacity[cursor] ?? 0);
     let remaining = available;
     while (taskIndex < pending.length) {
       const task = pending[taskIndex];
@@ -105,8 +95,17 @@ export function buildSchedule(state: Pick<PlannerState, "tasks" | "completionRec
   return entries.sort((a, b) => a.date.localeCompare(b.date) || state.tasks.find((task) => task.id === a.taskId)!.sequence - state.tasks.find((task) => task.id === b.taskId)!.sequence);
 }
 
+export function rescheduleFrom(state: PlannerState, start: string): ScheduleEntry[] {
+  const completed = new Set(state.completionRecords.map((record) => record.taskId));
+  const locked = state.schedule.filter((entry) => completed.has(entry.taskId) || entry.date < start);
+  const lockedIds = new Set(locked.map((entry) => entry.taskId));
+  const pending = state.tasks.filter((task) => !completed.has(task.id) && !lockedIds.has(task.id));
+  const rebuilt = buildSchedule({ ...state, tasks: pending }, start);
+  return [...locked, ...rebuilt].sort((a, b) => a.date.localeCompare(b.date) || state.tasks.find((task) => task.id === a.taskId)!.sequence - state.tasks.find((task) => task.id === b.taskId)!.sequence);
+}
+
 export function createInitialState(): PlannerState {
-  const base: PlannerState = { initialized: false, tasks: CURRICULUM, completionRecords: [], dateOverrides: [], extraCapacity: {}, settings: DEFAULT_SETTINGS, schedule: [], scheduleVersion: 1, lastRecalculatedAt: new Date().toISOString() };
+  const base: PlannerState = { initialized: false, curriculumVersion: 2, tasks: CURRICULUM, completionRecords: [], dateOverrides: [], extraCapacity: {}, settings: DEFAULT_SETTINGS, schedule: [], scheduleVersion: 1, lastRecalculatedAt: new Date().toISOString() };
   return { ...base, schedule: buildSchedule(base) };
 }
 
