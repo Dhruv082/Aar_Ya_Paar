@@ -1,0 +1,43 @@
+You are working on my existing “Aar Ya Paar” study-planner mobile application.
+
+Your task is to implement the feature:
+
+# NOTES PER TASK — V1
+
+The purpose of this feature is simple:
+
+I want to be able to write a short personal note (usually 2–3 lines) for any study task while studying or completing it, and later open that task and read the note for revision.
+
+This is NOT a revision system yet.
+Do NOT implement spaced repetition, revision scheduling, reminders, flashcards, AI summaries, or any other revision functionality.
+
+The note is simply a persistent personal memory attached to a task.
+
+---
+
+1. EXISTING PROJECT ARCHITECTURE
+
+---
+
+The repository already contains:
+
+frontend/
+backend/
+
+The frontend is an Expo Router application supporting Android/iOS/Web.
+
+Important existing frontend areas:
+
+frontend/app/
+File-based Expo Router screens.
+
+frontend/app/(tabs)/
+Main tabs such as Today, Schedule, Progress, Settings.
+
+frontend/src/app-context.tsx
+Main application store/provider.
+Handles planner state, persistence, migrations, actions, etc.
+
+frontend/src/scheduler.ts
+Core scheduling/domain engine.
+Handles capacity, schedule generation, res

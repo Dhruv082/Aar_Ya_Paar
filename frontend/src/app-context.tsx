@@ -20,6 +20,7 @@ async function getNotifications(): Promise<NotificationsModule | null> {
 type PlannerContextValue = {
   state: PlannerState | null; plans: SavedPlan[]; activePlanId: string | null; loading: boolean;
   saveOnboarding: (settings: Settings) => Promise<void>; toggleTask: (taskId: string) => Promise<void>; markMissed: () => Promise<void>;
+  saveTaskNote: (taskId: string, text: string) => Promise<void>;
   markUnavailable: (date: string, reason?: string) => Promise<void>; markAvailable: (date: string) => Promise<void>; studyAhead: () => Promise<void>;
   updateSettings: (settings: Settings) => Promise<void>; resetProgress: () => Promise<void>; exportData: () => Promise<void>; importData: () => Promise<void>;
   setActivePlan: (id: string) => Promise<void>; saveImportedPlan: (name: string, draft: ImportedPlanDraft) => Promise<string>;
@@ -31,18 +32,27 @@ function syncCompletion(schedule: ScheduleEntry[], next: PlannerState): Schedule
   return schedule.map((entry) => ({ ...entry, state: complete.has(entry.taskId) ? "completed" : entry.state === "completed" ? "scheduled" : entry.state }));
 }
 function withSchedule(next: PlannerState, schedule = buildSchedule(next)): PlannerState { return { ...next, schedule: syncCompletion(schedule, next), scheduleVersion: next.scheduleVersion + 1, lastRecalculatedAt: new Date().toISOString() }; }
+const NOTE_LIMIT = 1000;
+function normalizeNotes(notes: unknown): Record<string, string> {
+  if (!notes || typeof notes !== "object" || Array.isArray(notes)) return {};
+  return Object.fromEntries(Object.entries(notes).flatMap(([taskId, value]) => {
+    if (typeof value !== "string") return [];
+    const text = value.trim().slice(0, NOTE_LIMIT);
+    return text ? [[taskId, text]] : [];
+  }));
+}
 function migrateState(saved: PlannerState): PlannerState {
   const needsCurriculumMigration = saved.curriculumVersion !== 2 || saved.tasks.length !== CURRICULUM.length;
-  if (!needsCurriculumMigration) return { ...saved, settings: { ...DEFAULT_SETTINGS, ...saved.settings }, extraCapacity: saved.extraCapacity ?? {} };
+  if (!needsCurriculumMigration) return { ...saved, notesByTaskId: normalizeNotes(saved.notesByTaskId), settings: { ...DEFAULT_SETTINGS, ...saved.settings }, extraCapacity: saved.extraCapacity ?? {} };
   const completedTitles = new Set(saved.completionRecords.map((record) => saved.tasks.find((task) => task.id === record.taskId)?.title).filter(Boolean));
   const completionRecords = CURRICULUM.filter((task) => completedTitles.has(task.title)).map((task) => ({ taskId: task.id, completedAt: new Date().toISOString() }));
-  return { ...saved, curriculumVersion: 2, tasks: CURRICULUM, completionRecords, dateOverrides: saved.dateOverrides ?? [], extraCapacity: saved.extraCapacity ?? {}, settings: { ...DEFAULT_SETTINGS, ...saved.settings }, schedule: [] };
+  return { ...saved, curriculumVersion: 2, tasks: CURRICULUM, completionRecords, notesByTaskId: normalizeNotes(saved.notesByTaskId), dateOverrides: saved.dateOverrides ?? [], extraCapacity: saved.extraCapacity ?? {}, settings: { ...DEFAULT_SETTINGS, ...saved.settings }, schedule: [] };
 }
 function newStore(): PlannerStore { const state = createInitialState(); return { activePlanId: "starter", plans: [{ id: "starter", name: "Aar Ya Paar plan", state }] }; }
 function normalizeStore(store: PlannerStore): PlannerStore { return { activePlanId: store.plans.some((plan) => plan.id === store.activePlanId) ? store.activePlanId : store.plans[0]?.id ?? "starter", plans: store.plans.map((plan) => { const state = migrateState(plan.state); return { ...plan, name: plan.name === "Aap Ya Paar plan" ? "Aar Ya Paar plan" : plan.name, state: withSchedule(state, state.schedule.length ? state.schedule : buildSchedule(state)) }; }) }; }
 function makeImportedState(planId: string, draft: ImportedPlanDraft): PlannerState {
   const tasks: Task[] = draft.tasks.map((item, index) => ({ id: `${planId}-t${index + 1}`, sprint: item.sprint ?? 1, originalDay: item.day ?? 1, title: item.title.trim(), estimatedMinutes: item.minutes ?? 0, sequence: index + 1 }));
-  const base = createInitialState(); const next = { ...base, initialized: true, tasks, completionRecords: [], dateOverrides: [], extraCapacity: {}, schedule: [], scheduleVersion: 1, lastRecalculatedAt: new Date().toISOString() };
+  const base = createInitialState(); const next = { ...base, initialized: true, tasks, completionRecords: [], notesByTaskId: {}, dateOverrides: [], extraCapacity: {}, schedule: [], scheduleVersion: 1, lastRecalculatedAt: new Date().toISOString() };
   return { ...next, schedule: buildSchedule(next) };
 }
 
@@ -54,17 +64,29 @@ export function PlannerProvider({ children }: PropsWithChildren) {
   const updateActive = useCallback(async (update: (current: PlannerState) => PlannerState) => { if (!store || !active) return; const next = { ...store, plans: store.plans.map((plan) => plan.id === active.id ? { ...plan, state: update(plan.state) } : plan) }; await persist(next); }, [active, persist, store]);
   const saveOnboarding = useCallback((settings: Settings) => updateActive((current) => withSchedule({ ...current, initialized: true, settings })), [updateActive]);
   const toggleTask = useCallback((taskId: string) => updateActive((current) => { const exists = current.completionRecords.some((item) => item.taskId === taskId); const completionRecords = exists ? current.completionRecords.filter((item) => item.taskId !== taskId) : [...current.completionRecords, { taskId, completedAt: new Date().toISOString() }]; return withSchedule({ ...current, completionRecords }, current.schedule); }), [updateActive]);
+  const saveTaskNote = useCallback((taskId: string, text: string) => updateActive((current) => {
+    if (!current.tasks.some((task) => task.id === taskId)) return current;
+    const note = text.trim().slice(0, NOTE_LIMIT);
+    const notesByTaskId = { ...normalizeNotes(current.notesByTaskId) };
+    if (note) notesByTaskId[taskId] = note;
+    else delete notesByTaskId[taskId];
+    return { ...current, notesByTaskId };
+  }), [updateActive]);
   const markMissed = useCallback(() => updateActive((current) => { const today = dateKey(); const reservedTaskIds = current.schedule.filter((entry) => entry.date === today && entry.state !== "completed").map((entry) => entry.taskId); const next = { ...current, dateOverrides: [...current.dateOverrides.filter((item) => item.date !== today), { date: today, type: "unavailable" as const, reason: "Missed study day", reservedTaskIds }] }; return withSchedule(next, rescheduleFrom(next, addDays(today, 1))); }), [updateActive]);
   const markUnavailable = useCallback((date: string, reason = "Freedom day") => updateActive((current) => { const existing = current.dateOverrides.find((item) => item.date === date); const reservedTaskIds = existing?.reservedTaskIds ?? current.schedule.filter((entry) => entry.date === date && entry.state !== "completed").map((entry) => entry.taskId); const next = { ...current, dateOverrides: [...current.dateOverrides.filter((item) => item.date !== date), { date, type: "unavailable" as const, reason, reservedTaskIds }] }; return withSchedule(next, rescheduleFrom(next, date)); }), [updateActive]);
   const markAvailable = useCallback((date: string) => updateActive((current) => { const override = current.dateOverrides.find((item) => item.date === date); const fallback = current.schedule.find((entry) => entry.date >= date && entry.state !== "completed")?.taskId; const reserved = override?.reservedTaskIds?.length ? override.reservedTaskIds : fallback ? [fallback] : []; const next = { ...current, dateOverrides: current.dateOverrides.filter((item) => item.date !== date) }; return withSchedule(next, reserved.length ? restoreUnavailableDay(next, date, reserved) : rescheduleFrom(next, date)); }), [updateActive]);
   const studyAhead = useCallback(() => updateActive((current) => { const today = dateKey(); const next = { ...current, extraCapacity: { ...current.extraCapacity, [today]: (current.extraCapacity[today] ?? 0) + 60 } }; return withSchedule(next, rescheduleFrom(next, today)); }), [updateActive]);
   const updateSettings = useCallback(async (settings: Settings) => { await updateActive((current) => { const next = { ...current, settings }; return withSchedule(next, rescheduleFrom(next, addDays(dateKey(), 1))); }); const notifications = await getNotifications(); if (settings.notificationsEnabled && notifications) { const permissions = await notifications.getPermissionsAsync(); if (!permissions.granted) await notifications.requestPermissionsAsync(); const [hour, minute] = settings.reminderTime.split(":").map(Number); await notifications.scheduleNotificationAsync({ content: { title: "Aar Ya Paar", body: "Time to study. Your next task is waiting." }, trigger: { hour, minute, repeats: true } as never }); } }, [updateActive]);
-  const resetProgress = useCallback(() => updateActive((current) => { const fresh = createInitialState(); return { ...fresh, initialized: true, settings: current.settings }; }), [updateActive]);
+  const resetProgress = useCallback(() => updateActive((current) => {
+    const fresh = createInitialState();
+    const next = { ...fresh, initialized: true, tasks: current.tasks, settings: current.settings, notesByTaskId: normalizeNotes(current.notesByTaskId) };
+    return { ...next, schedule: buildSchedule(next) };
+  }), [updateActive]);
   const exportData = useCallback(async () => { if (!store) return; await Clipboard.setStringAsync(JSON.stringify(store)); Alert.alert("Backup copied", "All saved plans are now in the clipboard."); }, [store]);
   const importData = useCallback(async () => { try { const parsed = JSON.parse(await Clipboard.getStringAsync()) as PlannerStore; if (!parsed.plans?.length) throw new Error(); await persist(normalizeStore(parsed)); Alert.alert("Backup restored", "Your saved plans are ready."); } catch { Alert.alert("Import unavailable", "Copy a valid Aar Ya Paar backup first."); } }, [persist]);
   const setActivePlan = useCallback(async (id: string) => { if (!store?.plans.some((plan) => plan.id === id)) return; await persist({ ...store, activePlanId: id }); }, [persist, store]);
   const saveImportedPlan = useCallback(async (name: string, draft: ImportedPlanDraft) => { if (!store) throw new Error("Plans are still loading."); const id = `plan-${Date.now()}`; const plan: SavedPlan = { id, name: name.trim() || draft.suggestedName, sourceFilename: draft.sourceFilename, sourcePath: draft.sourcePath, importedAt: new Date().toISOString(), state: makeImportedState(id, draft) }; await persist({ ...store, plans: [...store.plans, plan] }); return id; }, [persist, store]);
-  const value = useMemo(() => ({ state: active?.state ?? null, plans: store?.plans ?? [], activePlanId: active?.id ?? null, loading, saveOnboarding, toggleTask, markMissed, markUnavailable, markAvailable, studyAhead, updateSettings, resetProgress, exportData, importData, setActivePlan, saveImportedPlan }), [active, store, loading, saveOnboarding, toggleTask, markMissed, markUnavailable, markAvailable, studyAhead, updateSettings, resetProgress, exportData, importData, setActivePlan, saveImportedPlan]);
+  const value = useMemo(() => ({ state: active?.state ?? null, plans: store?.plans ?? [], activePlanId: active?.id ?? null, loading, saveOnboarding, toggleTask, saveTaskNote, markMissed, markUnavailable, markAvailable, studyAhead, updateSettings, resetProgress, exportData, importData, setActivePlan, saveImportedPlan }), [active, store, loading, saveOnboarding, toggleTask, saveTaskNote, markMissed, markUnavailable, markAvailable, studyAhead, updateSettings, resetProgress, exportData, importData, setActivePlan, saveImportedPlan]);
   return <PlannerContext.Provider value={value}>{children}</PlannerContext.Provider>;
 }
 export function usePlanner() { const value = useContext(PlannerContext); if (!value) throw new Error("usePlanner must be used within PlannerProvider"); return value; }

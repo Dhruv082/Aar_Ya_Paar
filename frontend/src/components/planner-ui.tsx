@@ -28,17 +28,21 @@ export function StatTile({ label, value, accent = false, icon }: { label: string
   </View>;
 }
 
-export function TaskCard({ entry, state, onToggle }: { entry: ScheduleEntry; state: PlannerState; onToggle: () => void }) {
+export function TaskCard({ entry, state, onToggle, onOpenNote }: { entry: ScheduleEntry; state: PlannerState; onToggle: () => void; onOpenNote?: () => void }) {
   const styles = useStyles();
   const { colors } = useTheme();
   const task = getTask(state, entry.taskId);
   if (!task) return null;
   const complete = entry.state === "completed";
-  return <Pressable testID={`task-card-${task.id}`} accessibilityRole="checkbox" accessibilityState={{ checked: complete }} onPress={onToggle} style={({ pressed }) => [styles.taskCard, pressed && styles.pressed]}>
-    <View style={[styles.checkbox, complete && { backgroundColor: colors.success, borderColor: colors.success }]}>{complete ? <Icon name="check" size={16} color={colors.onSuccess} /> : null}</View>
-    <View style={styles.taskBody}><Text style={[styles.taskTitle, complete && styles.completedText]}>{task.title}</Text><Text style={styles.taskMeta}>SPRINT {task.sprint}  /  ORIGINAL DAY {task.originalDay}</Text></View>
-    <Text style={styles.taskMinutes}>{task.estimatedMinutes}m</Text>
-  </Pressable>;
+  const hasNote = Boolean(state.notesByTaskId[task.id]);
+  return <View style={styles.taskCard}>
+    <Pressable testID={`task-card-${task.id}`} accessibilityRole="checkbox" accessibilityState={{ checked: complete }} accessibilityLabel={`${task.title}, ${complete ? "completed" : "not completed"}`} onPress={onToggle} style={({ pressed }) => [styles.taskMain, pressed && styles.pressed]}>
+      <View style={[styles.checkbox, complete && { backgroundColor: colors.success, borderColor: colors.success }]}>{complete ? <Icon name="check" size={16} color={colors.onSuccess} /> : null}</View>
+      <View style={styles.taskBody}><Text style={[styles.taskTitle, complete && styles.completedText]}>{task.title}</Text><Text style={styles.taskMeta}>SPRINT {task.sprint}  /  ORIGINAL DAY {task.originalDay}</Text></View>
+      <Text style={styles.taskMinutes}>{task.estimatedMinutes}m</Text>
+    </Pressable>
+    {onOpenNote ? <Pressable testID={`task-note-${task.id}`} accessibilityRole="button" accessibilityLabel={`Open note for ${task.title}`} onPress={onOpenNote} hitSlop={8} style={[styles.noteButton, hasNote && { borderColor: colors.brandPrimary, backgroundColor: colors.brandTertiary }]}><Icon name={hasNote ? "notebook" : "notebook-outline"} size={18} color={hasNote ? colors.brandPrimary : colors.muted} /></Pressable> : null}
+  </View>;
 }
 
 export function SectionTitle({ eyebrow, title, action, onAction }: { eyebrow?: string; title: string; action?: string; onAction?: () => void }) {
@@ -63,13 +67,15 @@ const useStyles = makeStyles((colors) => ({
   statTop: { flexDirection: "row", alignItems: "center", gap: 6 },
   statLabel: { color: colors.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: "700" },
   statValue: { color: colors.onSurface, fontSize: 22, fontWeight: "800", marginTop: 6 },
-  taskCard: { minHeight: 76, padding: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surfaceSecondary, flexDirection: "row", alignItems: "center", gap: 12 },
+  taskCard: { minHeight: 76, paddingLeft: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surfaceSecondary, flexDirection: "row", alignItems: "stretch" },
+  taskMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
   checkbox: { width: 28, height: 28, borderRadius: 8, borderWidth: 1.5, borderColor: colors.borderStrong, alignItems: "center", justifyContent: "center" },
   taskBody: { flex: 1, gap: 5 },
   taskTitle: { color: colors.onSurface, fontSize: 16, fontWeight: "700" },
   completedText: { color: colors.muted, textDecorationLine: "line-through" },
   taskMeta: { color: colors.muted, fontSize: 10, letterSpacing: 0.5, fontWeight: "700" },
   taskMinutes: { color: colors.onSurfaceSecondary, fontSize: 13, fontWeight: "800" },
+  noteButton: { width: 48, marginVertical: 10, marginRight: 8, borderRadius: 9, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceTertiary, alignItems: "center", justifyContent: "center" },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 },
   eyebrow: { color: colors.brandPrimary, fontSize: 11, letterSpacing: 1.3, fontWeight: "800", textTransform: "uppercase", marginBottom: 4 },
   sectionTitle: { color: colors.onSurface, fontSize: 22, fontWeight: "800" },

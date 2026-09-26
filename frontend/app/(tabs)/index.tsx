@@ -5,16 +5,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { usePlanner } from "@/src/app-context";
 import { ActionButton, EmptyState, Icon, SectionTitle, StatTile, TaskCard } from "@/src/components/planner-ui";
+import { TaskNoteModal } from "@/src/components/task-note-modal";
 import { dateKey, formatDate, getTask, todayEntries } from "@/src/scheduler";
 import { makeStyles, useTheme } from "@/src/theme";
 import { usesNativeTabs } from "@/src/navigation";
 
 export default function TodayScreen() {
-  const { state, loading, plans, activePlanId, toggleTask, markMissed, studyAhead } = usePlanner();
+  const { state, loading, plans, activePlanId, toggleTask, saveTaskNote, markMissed, studyAhead } = usePlanner();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useStyles();
   const [showCurriculum, setShowCurriculum] = useState(false);
+  const [noteTaskId, setNoteTaskId] = useState<string | null>(null);
   if (loading || !state) return <View style={styles.center}><Text style={styles.muted}>Loading today…</Text></View>;
   const today = dateKey();
   const entries = todayEntries(state, today);
@@ -36,19 +38,21 @@ export default function TodayScreen() {
       <View style={styles.metrics}><StatTile label="Planned" value={`${plannedMinutes}m`} icon="target" /><StatTile label="Complete" value={`${completedMinutes}m`} accent icon="check-circle-outline" /><StatTile label="Remaining" value={`${remainingMinutes}m`} icon="clock-outline" /></View>
       <View style={styles.progressBar}><View style={[styles.progressFill, { width: `${plannedMinutes ? Math.min(100, (completedMinutes / plannedMinutes) * 100) : 0}%` }]} /></View>
       <SectionTitle eyebrow={sprintLabel} title={entries.length ? "Today's work" : "Clear runway"} action="Curriculum" onAction={() => setShowCurriculum(true)} />
-      {entries.length ? <View style={styles.tasks}>{entries.map((entry) => <TaskCard key={`${entry.date}-${entry.taskId}`} entry={entry} state={state} onToggle={() => void toggleTask(entry.taskId)} />)}</View> : <EmptyState icon="check-decagram-outline" title="All curriculum sprints caught up!" message="You have cleared today's runway. Use Study Ahead to pull in the next challenge." />}
+      {entries.length ? <View style={styles.tasks}>{entries.map((entry) => <TaskCard key={`${entry.date}-${entry.taskId}`} entry={entry} state={state} onToggle={() => void toggleTask(entry.taskId)} onOpenNote={() => setNoteTaskId(entry.taskId)} />)}</View> : <EmptyState icon="check-decagram-outline" title="All curriculum sprints caught up!" message="You have cleared today's runway. Use Study Ahead to pull in the next challenge." />}
       <View style={styles.actions}>{allTodayDone && pendingCount > 0 ? <ActionButton testID="study-ahead-button" label="Study Ahead +60m" icon="fast-forward" onPress={() => void studyAhead()} /> : null}<ActionButton testID="handle-missed-day-button" label="Handle missed day" icon="calendar-remove-outline" onPress={() => void markMissed()} secondary /></View>
       <View style={styles.footerNote}><Icon name="shield-check-outline" size={16} color={colors.success} /><Text style={styles.footerText}>Local-first · schedule version {state.scheduleVersion}</Text></View>
     </ScrollView>
-    <CurriculumModal visible={showCurriculum} onClose={() => setShowCurriculum(false)} state={state} />
+    <CurriculumModal visible={showCurriculum} onClose={() => setShowCurriculum(false)} onOpenNote={(taskId) => { setShowCurriculum(false); setNoteTaskId(taskId); }} state={state} />
+    <TaskNoteModal key={noteTaskId ?? "closed"} visible={Boolean(noteTaskId)} taskId={noteTaskId} state={state} onClose={() => setNoteTaskId(null)} onSave={saveTaskNote} />
   </View>;
 }
 
-function CurriculumModal({ visible, onClose, state }: { visible: boolean; onClose: () => void; state: NonNullable<ReturnType<typeof usePlanner>["state"]> }) {
+function CurriculumModal({ visible, onClose, onOpenNote, state }: { visible: boolean; onClose: () => void; onOpenNote: (taskId: string) => void; state: NonNullable<ReturnType<typeof usePlanner>["state"]> }) {
   const styles = useStyles();
   const { colors } = useTheme();
+  const [expandedSprint, setExpandedSprint] = useState<number | null>(null);
   const sprints = useMemo(() => Array.from({ length: 9 }, (_, index) => state.tasks.filter((task) => task.sprint === index + 1)), [state.tasks]);
-  return <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}><View style={styles.modal}><View style={styles.modalHeader}><View><Text style={styles.overline}>THE FULL RUN</Text><Text style={styles.modalTitle}>Curriculum</Text></View><Pressable onPress={onClose} style={styles.close}><Icon name="close" size={20} color={colors.onSurface} /></Pressable></View><ScrollView contentContainerStyle={styles.modalContent}>{sprints.map((tasks, index) => { const done = tasks.filter((task) => state.completionRecords.some((record) => record.taskId === task.id)).length; return <View key={index} style={styles.sprintRow}><View style={styles.sprintNumber}><Text style={styles.sprintNumberText}>{String(index + 1).padStart(2, "0")}</Text></View><View style={styles.sprintBody}><Text style={styles.sprintTitle}>Sprint {index + 1}</Text><Text style={styles.sprintMeta}>{done}/{tasks.length} tasks cleared</Text></View><Text style={styles.sprintPercent}>{Math.round((done / tasks.length) * 100)}%</Text></View>; })}</ScrollView></View></Modal>;
+  return <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}><View style={styles.modal}><View style={styles.modalHeader}><View><Text style={styles.overline}>THE FULL RUN</Text><Text style={styles.modalTitle}>Curriculum</Text></View><Pressable onPress={onClose} style={styles.close}><Icon name="close" size={20} color={colors.onSurface} /></Pressable></View><ScrollView contentContainerStyle={styles.modalContent}>{sprints.map((tasks, index) => { const done = tasks.filter((task) => state.completionRecords.some((record) => record.taskId === task.id)).length; const expanded = expandedSprint === index; return <View key={index} style={styles.sprintGroup}><Pressable testID={`curriculum-sprint-${index + 1}`} accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpandedSprint(expanded ? null : index)} style={styles.sprintRow}><View style={styles.sprintNumber}><Text style={styles.sprintNumberText}>{String(index + 1).padStart(2, "0")}</Text></View><View style={styles.sprintBody}><Text style={styles.sprintTitle}>Sprint {index + 1}</Text><Text style={styles.sprintMeta}>{done}/{tasks.length} tasks cleared · Tap to view</Text></View><View style={styles.sprintEnd}><Text style={styles.sprintPercent}>{Math.round((done / tasks.length) * 100)}%</Text><Icon name={expanded ? "chevron-up" : "chevron-down"} size={17} color={colors.muted} /></View></Pressable>{expanded ? <View style={styles.curriculumTasks}>{tasks.map((task) => { const complete = state.completionRecords.some((record) => record.taskId === task.id); const hasNote = Boolean(state.notesByTaskId[task.id]); return <Pressable key={task.id} testID={`curriculum-task-note-${task.id}`} accessibilityRole="button" accessibilityLabel={`Open note for ${task.title}`} onPress={() => onOpenNote(task.id)} style={styles.curriculumTask}><Icon name={complete ? "check-circle" : "circle-outline"} size={17} color={complete ? colors.success : colors.muted} /><View style={styles.curriculumTaskBody}><Text style={[styles.curriculumTaskTitle, complete && styles.completedTask]}>{task.title}</Text><Text style={styles.curriculumTaskMeta}>DAY {task.originalDay} · {task.estimatedMinutes} MIN</Text></View>{hasNote ? <Icon name="notebook" size={16} color={colors.brandPrimary} /> : null}</Pressable>; })}</View> : null}</View>; })}</ScrollView></View></Modal>;
 }
 
 const useStyles = makeStyles((colors) => ({
@@ -80,12 +84,15 @@ const useStyles = makeStyles((colors) => ({
   modalHeader: { paddingHorizontal: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: colors.divider },
   modalTitle: { color: colors.onSurface, fontSize: 28, fontWeight: "900", marginTop: 4 },
   close: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceTertiary, alignItems: "center", justifyContent: "center" },
-  modalContent: { padding: 20, gap: 10 },
+  modalContent: { padding: 20, gap: 10 }, sprintGroup: { gap: 0 },
   sprintRow: { minHeight: 68, flexDirection: "row", alignItems: "center", padding: 12, backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border, borderRadius: 10 },
   sprintNumber: { width: 40, height: 40, backgroundColor: colors.brandTertiary, alignItems: "center", justifyContent: "center", borderRadius: 8 },
   sprintNumberText: { color: colors.onBrandTertiary, fontSize: 13, fontWeight: "900" },
   sprintBody: { flex: 1, marginLeft: 12, gap: 4 },
   sprintTitle: { color: colors.onSurface, fontSize: 15, fontWeight: "800" },
-  sprintMeta: { color: colors.muted, fontSize: 12 },
+  sprintMeta: { color: colors.muted, fontSize: 12 }, sprintEnd: { alignItems: "flex-end", gap: 3 },
   sprintPercent: { color: colors.brandPrimary, fontSize: 13, fontWeight: "900" },
+  curriculumTasks: { marginTop: 1, padding: 8, gap: 4, backgroundColor: colors.surfaceTertiary, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 },
+  curriculumTask: { minHeight: 48, padding: 8, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 9 }, curriculumTaskBody: { flex: 1, gap: 3 },
+  curriculumTaskTitle: { color: colors.onSurface, fontSize: 13, fontWeight: "700" }, curriculumTaskMeta: { color: colors.muted, fontSize: 10, fontWeight: "800", letterSpacing: 0.3 }, completedTask: { color: colors.muted, textDecorationLine: "line-through" },
 }));

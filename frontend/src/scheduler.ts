@@ -19,6 +19,8 @@ export type PlannerState = {
   curriculumVersion: number;
   tasks: Task[];
   completionRecords: CompletionRecord[];
+  /** Personal, plan-local notes keyed by the stable task id. */
+  notesByTaskId: Record<string, string>;
   dateOverrides: DateOverride[];
   extraCapacity: Record<string, number>;
   settings: Settings;
@@ -117,7 +119,7 @@ export function restoreUnavailableDay(state: PlannerState, date: string, reserve
 }
 
 export function createInitialState(): PlannerState {
-  const base: PlannerState = { initialized: false, curriculumVersion: 2, tasks: CURRICULUM, completionRecords: [], dateOverrides: [], extraCapacity: {}, settings: DEFAULT_SETTINGS, schedule: [], scheduleVersion: 1, lastRecalculatedAt: new Date().toISOString() };
+  const base: PlannerState = { initialized: false, curriculumVersion: 2, tasks: CURRICULUM, completionRecords: [], notesByTaskId: {}, dateOverrides: [], extraCapacity: {}, settings: DEFAULT_SETTINGS, schedule: [], scheduleVersion: 1, lastRecalculatedAt: new Date().toISOString() };
   return { ...base, schedule: buildSchedule(base) };
 }
 
