@@ -1,0 +1,51 @@
+{
+  "summary": "Executed backend + frontend regression for PDF import fixes. Public endpoint import of supplied fixture succeeded with 250 tasks; validation failures remained correct; managed-storage 5xx retry behavior passed new unit tests. Expo web import screen loads without runtime errors, but headless automation could not complete DocumentPicker-driven upload flow end-to-end.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Web import-plan -> Choose PDF -> transition to review",
+        "issue": "In headless Playwright, DocumentPicker upload could not be completed to reach review state despite input[type=file] being present; no runtime error surfaced. Needs manual browser/device verification for picker event chain.",
+        "affected_testIDs": [
+          "choose-pdf-button",
+          "save-import-plan-button",
+          "import-error"
+        ]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_api_smoke_and_import_failures.py",
+    "/app/backend/tests/test_pdf_import_plan.py",
+    "/app/backend/tests/test_storage_retry.py",
+    "/app/test_reports/pytest/pytest_results_iter12.xml",
+    "/app/test_reports/artifacts_iter12_ui/import_plan_loaded.jpeg",
+    "/app/test_reports/artifacts_iter12_ui_retry/post_upload_state.jpeg"
+  ],
+  "action_items": [
+    "Manually validate import on physical Android Expo Go using a real Files-provider PDF to confirm staged-copy -> original-URI fallback path under actual SAF permissions.",
+    "Manually validate web DocumentPicker upload interaction in non-headless browser session to confirm review-state transition after selecting the same fixture PDF."
+  ],
+  "critical_code_review_comments": [
+    "frontend/src/import-api.ts reads EXPO_PUBLIC_BACKEND_URL fallback, while platform guidance states EXPO_BACKEND_URL; keep env naming consistent across app/config docs to avoid deployment drift."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_storage_retry.py",
+    "/app/test_reports/iteration_12.json"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "70%"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend regression is stable from public URL. Remaining gap is picker-driven client upload confirmation on real Android and manual web interaction; automation covered route render and no runtime errors but not full picker completion.",
+  "rca_of_issue": "Original report linked to transient storage/backend failures and Android file readability edge cases. Current backend retry logic for all 5xx and frontend fallback path are present and validated (backend by tests, frontend by code inspection)."
+}

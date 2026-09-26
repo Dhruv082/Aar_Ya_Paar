@@ -76,6 +76,7 @@ def init_storage() -> str:
     return storage_key
 
 def put_pdf(path: str, content: bytes) -> dict[str, Any]:
+    global storage_key
     if not EMERGENT_KEY:
         local_path = ROOT_DIR / "uploads" / Path(path).name
         local_path.parent.mkdir(parents=True, exist_ok=True)
@@ -83,8 +84,8 @@ def put_pdf(path: str, content: bytes) -> dict[str, Any]:
         return {"path": str(local_path)}
     key = init_storage()
     response = requests.put(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key, "Content-Type": "application/pdf"}, data=content, timeout=120)
-    if response.status_code == 503:
-        global storage_key
+    if response.status_code >= 500:
+        logger.warning("Managed storage returned %s for PDF upload; retrying with a new storage session.", response.status_code)
         storage_key = None
         key = init_storage()
         response = requests.put(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key, "Content-Type": "application/pdf"}, data=content, timeout=120)

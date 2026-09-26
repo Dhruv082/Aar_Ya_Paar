@@ -44,6 +44,12 @@ Keep the current GitHub `main` mobile app synchronized with this workspace and i
 - Added an explicit task-completion state marker for reliable end-to-end validation and increased the active-plan switcher to a 44pt minimum touch target.
 - Verified TypeScript, JavaScript/Python linting, backend smoke/import tests, onboarding, tabs, plan-library routing, and task completion in the Expo preview.
 
+## Implemented 2026-09-26 — PDF import reliability fix
+- Diagnosed two independent hosted import paths: a transient managed-storage 5xx on browser uploads and an Android Expo Go `FileSystem.copyAsync` unreadable-URI failure.
+- Added one refreshed-session retry for all managed-storage 5xx responses before an import is rejected.
+- Added Android upload fallback: if staging the DocumentPicker URI fails, the original provider URI is streamed directly; the user receives a clear Files-app retry message only if both paths fail.
+- Regression testing confirmed the public import endpoint parses the supplied PDF into 250 tasks, browser picker selection reaches the review screen, and managed-storage retry tests pass. Physical Android Expo Go confirmation remains the final device-specific check.
+
 ## Prioritized backlog
 - P0: Re-run active-plan switching on a physical device after importing a PDF; automated preview picker handoff was intermittent, although import/review/edit/save and plan coexistence passed in QA.
 - P0: Confirm Android/Expo Go PDF picker → upload → review using the new native multipart upload path.
@@ -55,6 +61,6 @@ Keep the current GitHub `main` mobile app synchronized with this workspace and i
 
 ## Remaining next tasks
 - Validate notification behavior on physical Android and iOS devices.
-- Validate the native document-picker upload path on physical Android and iOS devices.
+- Validate the native Android Expo Go document-picker upload path with a real Files-provider PDF.
 - Add unit coverage for scheduler edge cases across weekends, unavailable dates, oversized tasks, and timezone changes.
 - Improve accessibility labels for native tab bar variants.

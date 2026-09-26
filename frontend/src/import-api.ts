@@ -17,6 +17,27 @@ async function prepareNativePdf(uri: string, name: string): Promise<string> {
   return destination;
 }
 
+async function uploadNativePdf(endpoint: string, asset: { uri: string; name: string; mimeType?: string | null }) {
+  const options = { httpMethod: "POST" as const, uploadType: FileSystem.FileSystemUploadType.MULTIPART, fieldName: "file", mimeType: asset.mimeType ?? "application/pdf", parameters: { filename: asset.name } };
+  let uploadUri = asset.uri;
+  try {
+    uploadUri = await prepareNativePdf(asset.uri, asset.name);
+  } catch {
+    // Expo Go may already own the copied picker file and reject a second copy.
+    // uploadAsync can still stream that original URI through Android's provider.
+  }
+  try {
+    return await FileSystem.uploadAsync(endpoint, uploadUri, options);
+  } catch {
+    if (uploadUri === asset.uri) throw new Error("Android could not access this PDF. Choose it again from the Files app and retry.");
+    try {
+      return await FileSystem.uploadAsync(endpoint, asset.uri, options);
+    } catch {
+      throw new Error("Android could not access this PDF. Choose it again from the Files app and retry.");
+    }
+  }
+}
+
 export async function uploadPlanPdf(asset: { uri: string; name: string; mimeType?: string | null }): Promise<ImportedPlanDraft> {
   if (!backendUrl) throw new Error("The import service is unavailable in this app configuration.");
   const endpoint = `${backendUrl}/api/plans/import-pdf`;
@@ -32,8 +53,7 @@ export async function uploadPlanPdf(asset: { uri: string; name: string; mimeType
     }
     payload = await response.json();
   } else {
-    const readableUri = await prepareNativePdf(asset.uri, asset.name);
-    const response = await FileSystem.uploadAsync(endpoint, readableUri, { httpMethod: "POST", uploadType: FileSystem.FileSystemUploadType.MULTIPART, fieldName: "file", mimeType: asset.mimeType ?? "application/pdf", parameters: { filename: asset.name } });
+    const response = await uploadNativePdf(endpoint, asset);
     payload = JSON.parse(response.body) as typeof payload;
     if (response.status < 200 || response.status >= 300) throw new Error(payload.detail ?? "The PDF could not be imported. Please try another structured plan.");
   }
