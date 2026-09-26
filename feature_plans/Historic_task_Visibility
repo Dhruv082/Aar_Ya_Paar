@@ -1,0 +1,119 @@
+# Feature: Historical Schedule Visibility + Unresolved Past Tasks
+
+Implement this enhancement in the existing Aar Ya Paar study-planner mobile application.
+
+## Goal
+
+The Schedule screen currently provides a future-only window. This prevents a user from opening a recent or older planned day to either:
+
+1. Mark a task complete when they completed it but forgot to record it.
+2. Handle a genuinely missed day through the existing unavailable-day/rescheduling workflow.
+
+Past schedule entries must remain viewable without navigation itself recalculating or changing the plan.
+
+## Scope and constraints
+
+Keep this work inside the existing Schedule experience and existing planner architecture.
+
+Do not add a History screen, Missed Tasks screen, task state, persistence model, revision system, notes feature, study-ahead feature, or unrelated Schedule redesign.
+
+Reuse the existing local-date helpers (`dateKey`, `dateFromKey`, and `addDays`). Do not introduce UTC date conversion or direct ISO date parsing for this behavior.
+
+## Required date visibility
+
+The normal Schedule window must contain these 31 local dates, inclusive:
+
+- 5 previous calendar days
+- Today
+- 25 future calendar days
+
+For example, when today is 28 Sep, the fixed window is 23 Sep through 23 Oct.
+
+In addition, include every older date that has one or more unresolved schedule entries for the currently active plan.
+
+An unresolved entry is an entry whose task is not completed. Derive that from the existing `schedule`/completion state; do not persist a second historical-date list.
+
+Conceptually:
+
+```text
+visibleDates = sortAscending(unique(
+  dates from today - 5 through today + 25,
+  schedule-entry dates before today - 5 where entry is not completed
+))
+```
+
+Completed historical dates outside the normal five-day history do not need special visibility. They may remain in the persisted schedule, but must not be added solely because they are completed.
+
+Because active planner state is already selected by `usePlanner`, this calculation must only inspect the active plan's `state`.
+
+## Schedule interaction requirements
+
+- Selecting a date is view-only: it may only update the Schedule screen's selected-date UI state.
+- It must not call `buildSchedule`, `rescheduleFrom`, `restoreUnavailableDay`, or update persisted planner state.
+- Historical days must be visibly identified as past days.
+- A past date with unresolved entries must show a subtle pending indicator, for example `5 tasks pending` with a warning icon.
+- The user must be able to mark a task complete from a historical date. Reuse the existing `toggleTask(taskId)` completion action and existing task-card visual language; do not introduce a new completion action or task state.
+- Keep task-note access available.
+
+For usability when many older unresolved dates exist, keep the rail chronologically ordered but initially position its horizontal viewport around the normal window/today. Older unresolved dates remain reachable by scrolling backward. Do not default the user to the oldest unresolved date.
+
+## Missed-day/rescheduling requirements
+
+Reuse the existing unavailable-day/rescheduling model. Make the missed-day action date-aware so it can be invoked for the currently selected historical date as well as today (for example, `markMissed(date = dateKey())`).
+
+When the user explicitly handles a missed day:
+
+- Create/reuse the existing unavailable date override and its `reservedTaskIds` behavior.
+- Recalculate from the missed date, not from the day after it. The unavailable override makes the missed date zero-capacity, so its unfinished work is placed on subsequent available dates.
+- Do not keep the unfinished task entries locked on the missed date; otherwise they are not actually rescheduled.
+- This action may alter future schedule dates. That is intentional and must happen only after the explicit missed-day action, never while browsing history.
+
+Once a historical date's tasks have either been completed or explicitly rescheduled through this flow, it no longer qualifies for special unresolved-history visibility.
+
+## Architecture and likely file changes
+
+Inspect and preserve the responsibilities of:
+
+- `frontend/app/(tabs)/schedule.tsx` — derive and render visible dates, past styling, pending counts, historical task completion, and selected-date missed-day action.
+- `frontend/src/app-context.tsx` — expose the existing completion action and generalize missed-day handling to accept a date while retaining the current override/rescheduling primitives.
+- `frontend/src/scheduler.ts` — add a small pure helper for derived visible dates if that keeps Schedule rendering simple and makes the behavior unit-testable. Keep scheduler date logic local-date based.
+- `frontend/src/components/planner-ui.tsx` — reuse `TaskCard` where it fits rather than duplicating completion controls.
+
+Avoid schema migration: `schedule`, `completionRecords`, and `dateOverrides` are already persisted in each plan's state and are sufficient for this feature.
+
+## Edge cases
+
+- Yesterday has incomplete tasks: it appears in the normal five-day history and can be completed or handled as missed.
+- A task completed late from a historical date: it is recorded through the existing completion mechanism and is no longer unresolved.
+- A task genuinely missed: explicit handling moves it using the existing rescheduling behavior.
+- Unresolved tasks 7, 10, or 30+ days old: every affected date remains navigable.
+- Multiple historical dates with unresolved tasks: all appear once, in chronological order.
+- A historical day that is resolved: it falls away from special visibility once outside the five-day window.
+- Switching plans: only unresolved dates from the active plan appear.
+- Restarting the app: persisted schedule, completions, and overrides produce the same derived history.
+- Browsing 28 Sep -> 27 Sep -> 26 Sep: no scheduler state or future schedule changes.
+
+## Acceptance tests
+
+Add focused coverage for the pure date-list helper and relevant UI/context behavior:
+
+1. The fixed date list contains exactly five previous days, today, and 25 future days.
+2. An unresolved older date is included.
+3. Multiple unresolved older dates are included once and sorted.
+4. A completed older date is excluded when it is outside the fixed window.
+5. Selecting a historical date does not invoke any rescheduling action or modify schedule state.
+6. A historical task can use the existing completion action.
+7. Handling a missed historical day applies an unavailable override and moves its unfinished work forward.
+8. Existing today missed-day behavior still reschedules work correctly.
+9. Active-plan switching does not leak historical dates between plans.
+
+The frontend currently has no configured JavaScript test script. Prefer adding the smallest compatible test setup needed for the extracted pure helper and context behavior, then run it alongside `npm run lint`. Do not claim frontend test coverage without a runnable test command.
+
+## Delivery checklist
+
+After implementation, provide:
+
+- Files changed
+- Behavior implemented
+- Tests and lint commands run, with results
+- Any deliberately deferred test infrastructure work
