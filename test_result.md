@@ -216,10 +216,16 @@
       - working: "NA"
         agent: "main"
         comment: "Replaced the small CTA with one full-card Pressable activation target and removed global LogBox suppression."
+      - working: false
+        agent: "user"
+        comment: "Uploading the same structured PDF on mobile fails with an unsupported FormData part implementation error."
+      - working: "NA"
+        agent: "main"
+        comment: "Replaced native FormData URI-object upload with Expo FileSystem legacy multipart upload; web retains Blob/FormData handling."
 ## metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 8
+  test_sequence: 9
   run_ui: true
 ## test_plan:
   current_focus:

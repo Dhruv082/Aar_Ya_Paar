@@ -1,0 +1,54 @@
+{
+  "summary": "Iteration 9 tested both backend and frontend for PDF import regression. Native upload implementation in code matches acceptance criteria, backend import endpoint passed with supplied PDF (200, private source_path, 250 tasks, no issues), and onboarding -> Plan Library -> Import screen renders on web preview. Real Android/Expo Go runtime was not available in this environment.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Web import screen -> choose-pdf-button -> upload -> review",
+        "issue": "In headless Playwright web preview, forcing input[type=file] after choose-pdf-button does not transition to review (import-plan-name not rendered) and no deterministic /api/plans/import-pdf request is observed in that probe. This appears to be a DocumentPicker web automation limitation; manual/device validation is still required.",
+        "affected_testIDs": [
+          "choose-pdf-button",
+          "import-plan-name",
+          "import-error"
+        ]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_pdf_import_plan.py",
+    "/app/test_reports/pytest/pytest_results_iter10.xml",
+    "/app/test_reports/artifacts_iter10_ui/import_screen.jpeg",
+    "/app/test_reports/artifacts_iter10_ui_retry/post_upload_state.jpeg",
+    "/app/test_reports/artifacts_iter10_ui_probe/probe_state.jpeg"
+  ],
+  "action_items": [
+    "Run physical Android/Expo Go validation for the exact user-reported path (native picker -> upload -> review) since this environment cannot execute Expo Go runtime behavior.",
+    "If mobile still fails, capture runtime logs around FileSystem.uploadAsync call/response and verify picker asset fields (uri/name/mimeType) at runtime.",
+    "Optionally add a web-testable import fallback hook for deterministic E2E automation (non-production test pathway)."
+  ],
+  "critical_code_review_comments": [
+    "Verified /app/frontend/src/import-api.ts native branch uses expo-file-system/legacy FileSystem.uploadAsync with MULTIPART, fieldName='file', PDF mime type fallback, and no manual multipart Content-Type header.",
+    "Verified no React Native FormData URI-object upload path remains in native branch.",
+    "Frontend uses EXPO_PUBLIC_BACKEND_URL while platform guidance references EXPO_BACKEND_URL; keep env naming consistent to avoid cross-agent config drift."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pdf_import_plan.py",
+    "/app/test_reports/iteration_9.json"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "70%"
+  },
+  "seed_data_creation": "Reused supplied PDF fixture: /app/tests/assets/aap_ya_paar_complete_study_plan.pdf",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Stop re-trying headless chooser selectors: 3 upload probes completed and all remained on import screen without review state. Focus next on real Android/Expo Go runtime validation for native multipart path and manual web validation if needed.",
+  "rca_of_issue": "Backend parser/storage path is healthy (pytest: 3/3 pass with supplied PDF; includes 200, private source_path prefix, 250 tasks, empty issues). Static code confirms native migration away from FormData URI objects. Remaining uncertainty is UI upload completion in headless web automation: DocumentPicker interaction does not reliably emulate user file selection callback in this environment, so absence of review transition here is not sufficient to conclude product regression on real devices.",
+  "test_credentials": "Read /app/memory/test_credentials.md before auth flows; file exists but contains no credentials. No auth flow was required for this test scope."
+}

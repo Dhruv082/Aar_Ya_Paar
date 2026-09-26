@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -7,7 +8,7 @@ from dotenv import dotenv_values
 
 
 # Module: PDF import endpoint deterministic parsing validation
-PDF_URL = "https://customer-assets-0z36b82j.emergentagent.net/job_doc2app-4/artifacts/mlbk7hrw_Aap%20Ya%20Paar%20-%20Complete%20Study%20Plan.pdf"
+PDF_PATH = Path("/app/tests/assets/aap_ya_paar_complete_study_plan.pdf")
 BASE_URL = os.environ.get("EXPO_PUBLIC_BACKEND_URL")
 
 if not BASE_URL:
@@ -20,10 +21,11 @@ def imported_payload() -> dict[str, Any]:
     if not BASE_URL:
         pytest.fail("Missing EXPO_PUBLIC_BACKEND_URL environment variable")
 
-    pdf_response = requests.get(PDF_URL, timeout=60)
-    assert pdf_response.status_code == 200, "Failed to fetch sample PDF"
+    assert PDF_PATH.exists(), f"Missing supplied test PDF at {PDF_PATH}"
+    pdf_content = PDF_PATH.read_bytes()
+    assert pdf_content, "Supplied test PDF is empty"
 
-    files = {"file": ("Aap-Ya-Paar-Complete-Study-Plan.pdf", pdf_response.content, "application/pdf")}
+    files = {"file": (PDF_PATH.name, pdf_content, "application/pdf")}
     response = requests.post(f"{BASE_URL.rstrip('/')}/api/plans/import-pdf", files=files, timeout=180)
 
     assert response.status_code == 200, f"Unexpected status: {response.status_code}, body={response.text[:400]}"
