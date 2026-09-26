@@ -19,10 +19,12 @@ from pypdf import PdfReader
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# MongoDB is only needed by the optional status endpoints. Keeping it optional
+# lets the PDF importer run locally without a database.
+mongo_url = os.environ.get("MONGO_URL")
+db_name = os.environ.get("DB_NAME")
+client = AsyncIOMotorClient(mongo_url) if mongo_url else None
+db = client[db_name] if client and db_name else None
 APP_NAME = "aap-ya-paar"
 STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
 STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
@@ -74,6 +76,11 @@ def init_storage() -> str:
     return storage_key
 
 def put_pdf(path: str, content: bytes) -> dict[str, Any]:
+    if not EMERGENT_KEY:
+        local_path = ROOT_DIR / "uploads" / Path(path).name
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path.write_bytes(content)
+        return {"path": str(local_path)}
     key = init_storage()
     response = requests.put(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key, "Content-Type": "application/pdf"}, data=content, timeout=120)
     if response.status_code == 503:
@@ -182,6 +189,8 @@ async def import_plan_pdf(file: UploadFile = File(...)):
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database is not configured.")
     status_dict = input.dict()
     status_obj = StatusCheck(**status_dict)
     _ = await db.status_checks.insert_one(status_obj.dict())
@@ -189,6 +198,8 @@ async def create_status_check(input: StatusCheckCreate):
 
 @api_router.get("/status", response_model=List[StatusCheck])
 async def get_status_checks():
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database is not configured.")
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
 
@@ -212,4 +223,5 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
+    if client:
+        client.close()
