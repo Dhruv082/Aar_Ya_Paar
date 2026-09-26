@@ -31,7 +31,7 @@ Build a mobile app from the uploaded study-plan specification: a personal, local
 - Added a reversible Schedule control: unavailable days remember their original unfinished tasks, so restoring a missed day never pulls future-day work into it.
 - Added Phase 1 PDF plan import: private managed source-PDF upload, deterministic Sprint/Day/Task/Time extraction, editable import review, local multi-plan library, and active-plan switcher.
 - Renamed all visible product branding from Aap Ya Paar to Aar Ya Paar while preserving local planner data and storage identifiers.
-- Replaced the native PDF upload FormData URI path with Expo FileSystem multipart upload after an Android incompatibility report; backend parsing passed with the supplied 250-task PDF, pending physical-device confirmation.
+- Native PDF upload now copies the picked document into an app-owned cache folder, verifies it, and uploads it via Expo FileSystem multipart after Android reported an unreadable picker cache URI; backend parsing passed with the supplied 250-task PDF, pending physical-device confirmation.
 
 ## Prioritized backlog
 - P0: Re-run active-plan switching on a physical device after importing a PDF; automated preview picker handoff was intermittent, although import/review/edit/save and plan coexistence passed in QA.

@@ -6,6 +6,17 @@ import { ImportedPlanDraft } from "@/src/plan-types";
 
 const backendUrl = Constants.expoConfig?.extra?.backendUrl ?? process.env.EXPO_PUBLIC_BACKEND_URL;
 
+async function prepareNativePdf(uri: string, name: string): Promise<string> {
+  const directory = `${FileSystem.cacheDirectory}plan-imports/`;
+  const safeName = name.replace(/[^a-zA-Z0-9._-]/g, "-") || "study-plan.pdf";
+  const destination = `${directory}${Date.now()}-${safeName}`;
+  await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
+  await FileSystem.copyAsync({ from: uri, to: destination });
+  const info = await FileSystem.getInfoAsync(destination);
+  if (!info.exists || !info.size) throw new Error("The selected PDF could not be prepared for upload. Please choose it again.");
+  return destination;
+}
+
 export async function uploadPlanPdf(asset: { uri: string; name: string; mimeType?: string | null }): Promise<ImportedPlanDraft> {
   if (!backendUrl) throw new Error("The import service is unavailable in this app configuration.");
   const endpoint = `${backendUrl}/api/plans/import-pdf`;
@@ -21,7 +32,8 @@ export async function uploadPlanPdf(asset: { uri: string; name: string; mimeType
     }
     payload = await response.json();
   } else {
-    const response = await FileSystem.uploadAsync(endpoint, asset.uri, { httpMethod: "POST", uploadType: FileSystem.FileSystemUploadType.MULTIPART, fieldName: "file", mimeType: asset.mimeType ?? "application/pdf", parameters: { filename: asset.name } });
+    const readableUri = await prepareNativePdf(asset.uri, asset.name);
+    const response = await FileSystem.uploadAsync(endpoint, readableUri, { httpMethod: "POST", uploadType: FileSystem.FileSystemUploadType.MULTIPART, fieldName: "file", mimeType: asset.mimeType ?? "application/pdf", parameters: { filename: asset.name } });
     payload = JSON.parse(response.body) as typeof payload;
     if (response.status < 200 || response.status >= 300) throw new Error(payload.detail ?? "The PDF could not be imported. Please try another structured plan.");
   }

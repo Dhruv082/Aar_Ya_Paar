@@ -222,10 +222,16 @@
       - working: "NA"
         agent: "main"
         comment: "Replaced native FormData URI-object upload with Expo FileSystem legacy multipart upload; web retains Blob/FormData handling."
+      - working: false
+        agent: "user"
+        comment: "Native FileSystem upload then failed because the DocumentPicker cache URI was not readable on Android/Expo Go."
+      - working: "NA"
+        agent: "main"
+        comment: "Native imports now explicitly copy the picker URI into an app-owned plan-imports cache folder, verify it exists and has size, then upload that verified file."
 ## metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 9
+  test_sequence: 10
   run_ui: true
 ## test_plan:
   current_focus:

@@ -1,0 +1,51 @@
+{
+  "summary": "Iteration 10 validated the native PDF upload-path fix statically and re-ran backend regression with the supplied PDF. Backend import endpoint passes (200, private source path, 250 tasks, no parser issues). Frontend startup and import entry render correctly on preview. Real Android/Expo Go runtime was not available here, so device-level native verification is still pending.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Android Expo Go native picker URI -> cache copy -> native multipart upload",
+        "issue": "Could not be executed in this container/web-preview environment. Only static code validation and backend/API regression were executed.",
+        "affected_testIDs": [
+          "choose-pdf-button",
+          "import-back-button"
+        ]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_pdf_import_plan.py",
+    "/app/test_reports/pytest/pytest_results_iter10_contd.xml",
+    "/app/test_reports/artifacts_iter10_contd_load/initial_mobile.jpeg",
+    "/app/test_reports/artifacts_iter10_contd_ui/import_entry.jpeg"
+  ],
+  "action_items": [
+    "Run real Android/Expo Go test for the exact user path: DocumentPicker select PDF -> prepareNativePdf copy/verify -> FileSystem.uploadAsync multipart.",
+    "Capture device logs around uploadPlanPdf if any Android failure persists (copied URI path and getInfoAsync result)."
+  ],
+  "critical_code_review_comments": [
+    "Verified /app/frontend/src/import-api.ts native path now copies DocumentPicker URI into FileSystem.cacheDirectory + 'plan-imports', then validates with getInfoAsync(exists + size) before uploadAsync.",
+    "Verified native FormData URI-object upload path is absent; native branch uses FileSystem.uploadAsync with MULTIPART and fieldName='file'.",
+    "Backend regression remains healthy: /api/plans/import-pdf returns deterministic parse output for supplied PDF fixture."
+  ],
+  "updated_files": [
+    "/app/test_reports/iteration_10.json"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "85%"
+  },
+  "seed_data_creation": "Reused provided fixture: /app/tests/assets/aap_ya_paar_complete_study_plan.pdf",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Do not claim native fix completion until a real Android/Expo Go run confirms DocumentPicker URI copy + upload path. Web preview confirms startup/import entry rendering only.",
+  "rca_of_issue": "Original failure was Android unreadable DocumentPicker cache URI. Current implementation mitigates by copying into app-owned cacheDirectory/plan-imports and verifying file existence/size before native multipart upload. This RCA is statically validated in code; runtime confirmation still needed on physical/emulated Android Expo Go.",
+  "test_credentials": "Read /app/memory/test_credentials.md before auth tests; file exists but contains no credentials. No auth flows were in scope.",
+  "mocked_api": "NONE"
+}
