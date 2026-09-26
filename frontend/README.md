@@ -10,7 +10,22 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Configure the local API
+
+   The included `.env` targets this computer's current Wi-Fi address. If it
+   changes, copy `.env.example` to `.env` and update
+   `EXPO_PUBLIC_BACKEND_URL`. Do not use `localhost` when testing with Expo Go
+   on a phone.
+
+3. Start the backend in a second terminal
+
+   ```bash
+   cd ../backend
+   pip install -r requirements.txt
+   uvicorn server:app --host 0.0.0.0 --port 8000
+   ```
+
+4. Start the app
 
    ```bash
    npx expo start
