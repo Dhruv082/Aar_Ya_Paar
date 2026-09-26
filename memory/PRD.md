@@ -49,6 +49,8 @@ Keep the current GitHub `main` mobile app synchronized with this workspace and i
 - Added one refreshed-session retry for all managed-storage 5xx responses before an import is rejected.
 - Added Android upload fallback: if staging the DocumentPicker URI fails, the original provider URI is streamed directly; the user receives a clear Files-app retry message only if both paths fail.
 - Regression testing confirmed the public import endpoint parses the supplied PDF into 250 tasks, browser picker selection reaches the review screen, and managed-storage retry tests pass. Physical Android Expo Go confirmation remains the final device-specific check.
+- For the user-supplied 59-page JB Jago plan, switched the primary Android path to React Native `FormData` plus `fetch`, which streams the original DocumentPicker provider URI before any expo-file-system operation. The prior staging/direct `expo-file-system` sequence remains only as a network-failure fallback.
+- The exact PDF now imports through the public API as 823 tasks with no global parsing issues; browser selection reaches its review screen. The Android networking path passed static regression review and requires a final physical Expo Go retry.
 
 ## Prioritized backlog
 - P0: Re-run active-plan switching on a physical device after importing a PDF; automated preview picker handoff was intermittent, although import/review/edit/save and plan coexistence passed in QA.

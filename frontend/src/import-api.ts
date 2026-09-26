@@ -38,10 +38,16 @@ async function uploadNativePdf(endpoint: string, asset: { uri: string; name: str
   }
 }
 
+async function uploadNativePdfWithFormData(endpoint: string, asset: { uri: string; name: string; mimeType?: string | null }) {
+  const form = new FormData();
+  form.append("file", { uri: asset.uri, name: asset.name, type: asset.mimeType ?? "application/pdf" } as unknown as Blob);
+  return fetch(endpoint, { method: "POST", body: form });
+}
+
 export async function uploadPlanPdf(asset: { uri: string; name: string; mimeType?: string | null }): Promise<ImportedPlanDraft> {
   if (!backendUrl) throw new Error("The import service is unavailable in this app configuration.");
   const endpoint = `${backendUrl}/api/plans/import-pdf`;
-  let payload: { detail?: string; source_filename?: string; source_path?: string; suggested_name?: string; tasks?: { row_id?: string; sprint?: number | null; day?: number | null; title?: string; minutes?: number | null; issues?: string[] }[]; issues?: string[]; total_minutes?: number };
+  let payload: { detail?: string; source_filename?: string; source_path?: string; suggested_name?: string; tasks?: { row_id?: string; sprint?: number | null; day?: number | null; title?: string; minutes?: number | null; issues?: string[] }[]; issues?: string[]; total_minutes?: number } = {};
   if (Platform.OS === "web") {
     const form = new FormData();
     const blob = await (await fetch(asset.uri)).blob();
@@ -53,9 +59,20 @@ export async function uploadPlanPdf(asset: { uri: string; name: string; mimeType
     }
     payload = await response.json();
   } else {
-    const response = await uploadNativePdf(endpoint, asset);
-    payload = JSON.parse(response.body) as typeof payload;
-    if (response.status < 200 || response.status >= 300) throw new Error(payload.detail ?? "The PDF could not be imported. Please try another structured plan.");
+    let nativeResponse: Response | null = null;
+    try {
+      // React Native's networking layer can stream the Android document provider URI
+      // directly, without asking expo-file-system to read the host Expo Go cache.
+      nativeResponse = await uploadNativePdfWithFormData(endpoint, asset);
+    } catch {
+      const legacyResponse = await uploadNativePdf(endpoint, asset);
+      payload = JSON.parse(legacyResponse.body) as typeof payload;
+      if (legacyResponse.status < 200 || legacyResponse.status >= 300) throw new Error(payload.detail ?? "The PDF could not be imported. Please try another structured plan.");
+    }
+    if (nativeResponse) {
+      payload = await nativeResponse.json().catch(() => ({}));
+      if (!nativeResponse.ok) throw new Error(payload.detail ?? "The PDF could not be imported. Please try another structured plan.");
+    }
   }
   return {
     sourceFilename: payload.source_filename ?? asset.name,
