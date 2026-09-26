@@ -29,6 +29,6 @@
   "seed_data_creation": "None",
   "retest_needed": false,
   "should_main_agent_self_test": true,
-  "context_for_next_testing_agent": "Tested on https://doc2app-4.preview.emergentagent.com with mobile viewport 375x667. Cleared web local state (localStorage/sessionStorage/indexedDB), completed onboarding (weekday=60), verified Today initially had s1-d1-t1 and s1-d1-t2 only (no s1-d1-t3), completed s1-d1-t1, used handle-missed-day-button, restored today from Schedule via mark-available-button, and confirmed Today showed s1-d1-t2 unfinished plus s1-d1-t1 completed, with no s1-d1-t3 pulled in.",
+  "context_for_next_testing_agent": "Tested on https://emergent-code-sync.preview.emergentagent.com with mobile viewport 375x667. Cleared web local state (localStorage/sessionStorage/indexedDB), completed onboarding (weekday=60), verified Today initially had s1-d1-t1 and s1-d1-t2 only (no s1-d1-t3), completed s1-d1-t1, used handle-missed-day-button, restored today from Schedule via mark-available-button, and confirmed Today showed s1-d1-t2 unfinished plus s1-d1-t1 completed, with no s1-d1-t3 pulled in.",
   "rca_of_issue": "Validated the new reservedTaskIds-based restore path. markMissed preserved today's unfinished task IDs, and markAvailable restored only those IDs for the selected day while rebuilding other pending tasks from following dates, preventing future-task bleed into restored Today."
 }

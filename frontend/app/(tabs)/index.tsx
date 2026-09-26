@@ -57,7 +57,7 @@ const useStyles = makeStyles((colors) => ({
   center: { flex: 1, backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" },
   muted: { color: colors.muted, fontSize: 14 },
   topbar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  planChip: { marginTop: 8, minHeight: 30, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, borderRadius: 8, backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
+  planChip: { marginTop: 8, minHeight: 44, alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, borderRadius: 8, backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
   planChipText: { color: colors.onSurfaceSecondary, fontSize: 10, fontWeight: "800", maxWidth: 160 },
   overline: { color: colors.muted, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
   title: { color: colors.onSurface, fontSize: 34, fontWeight: "900", marginTop: 3 },

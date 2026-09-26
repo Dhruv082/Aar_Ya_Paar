@@ -1,0 +1,59 @@
+{
+  "summary": "Iteration 11 tested both backend and frontend against requested sync checks. Backend proxy/API tests passed (including PDF import failure paths). Frontend mobile web flow passed onboarding, tabs, settings->plans->back, and import screen no-document baseline without runtime crash.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Today task completion accessibility state",
+        "issue": "Task card tap is interactive and app remains stable, but web automation could not read deterministic checkbox state via aria-checked (returned null), limiting strict automated verification semantics.",
+        "affected_testIDs": [
+          "task-card-*"
+        ]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Today",
+        "issues": [
+          "active-plan-switcher touch target appears below 44px minimum (minHeight: 30), which is low for mobile accessibility."
+        ]
+      }
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_api_smoke_and_import_failures.py",
+    "/app/backend/tests/test_pdf_import_plan.py",
+    "/app/test_reports/pytest/pytest_results_iter11.xml",
+    "/app/test_reports/artifacts_iter11_ui/01_onboarding_loaded.jpeg",
+    "/app/test_reports/artifacts_iter11_ui/02_import_no_doc_state.jpeg"
+  ],
+  "action_items": [
+    "Optionally expose deterministic task completion state for web E2E (e.g., explicit testID/state label) to strengthen automation assertions.",
+    "Increase active-plan-switcher touch target to >=44px for mobile accessibility.",
+    "Align env naming guidance and runtime usage (EXPO_BACKEND_URL vs EXPO_PUBLIC_BACKEND_URL) to avoid cross-agent config drift."
+  ],
+  "critical_code_review_comments": [
+    "Backend /api/plans/import-pdf handles missing file and non-PDF types correctly (422/400) and root proxy /api/ returns expected payload.",
+    "Frontend import API relies on EXPO_PUBLIC_BACKEND_URL fallback; app.json extra.backendUrl is not populated, so env naming consistency is important.",
+    "No React Native red-screen/runtime crash observed during requested core flows in web preview."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_api_smoke_and_import_failures.py",
+    "/app/test_reports/iteration_11.json"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "90%"
+  },
+  "seed_data_creation": "Reused existing PDF fixture: /app/tests/assets/aap_ya_paar_complete_study_plan.pdf",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Do not re-loop on DocumentPicker automation here; requested no-document state and API failure paths are already validated. If deeper task-toggle semantics are required, add explicit UI state test hook/testID for completion status.",
+  "rca_of_issue": "No backend defects found. Remaining frontend gap is testability/semantics: task completion toggles via Pressable but automation could not reliably introspect checkbox state through aria-checked on web preview. Mitigation: expose explicit completion-state test marker (e.g., testID or visible status text) per task row.",
+  "test_credentials": "Required credentials file /app/memory/test_credentials.md is missing in this workspace; no auth flows were in scope."
+}

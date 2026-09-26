@@ -34,8 +34,8 @@ export function TaskCard({ entry, state, onToggle }: { entry: ScheduleEntry; sta
   const task = getTask(state, entry.taskId);
   if (!task) return null;
   const complete = entry.state === "completed";
-  return <Pressable testID={`task-card-${task.id}`} accessibilityRole="checkbox" accessibilityState={{ checked: complete }} onPress={onToggle} style={({ pressed }) => [styles.taskCard, pressed && styles.pressed]}>
-    <View style={[styles.checkbox, complete && { backgroundColor: colors.success, borderColor: colors.success }]}>{complete ? <Icon name="check" size={16} color={colors.onSuccess} /> : null}</View>
+  return <Pressable testID={`task-card-${task.id}`} accessibilityRole="checkbox" accessibilityLabel={`${task.title}, ${complete ? "completed" : "not completed"}`} accessibilityState={{ checked: complete }} onPress={onToggle} style={({ pressed }) => [styles.taskCard, pressed && styles.pressed]}>
+    <View testID={`task-state-${task.id}-${complete ? "completed" : "pending"}`} accessible={false} style={[styles.checkbox, complete && { backgroundColor: colors.success, borderColor: colors.success }]}>{complete ? <Icon name="check" size={16} color={colors.onSuccess} /> : null}</View>
     <View style={styles.taskBody}><Text style={[styles.taskTitle, complete && styles.completedText]}>{task.title}</Text><Text style={styles.taskMeta}>SPRINT {task.sprint}  /  ORIGINAL DAY {task.originalDay}</Text></View>
     <Text style={styles.taskMinutes}>{task.estimatedMinutes}m</Text>
   </Pressable>;
