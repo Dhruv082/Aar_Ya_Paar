@@ -34,6 +34,7 @@ export type ScheduleEntry = {
 export type PlannerState = {
   initialized: boolean;
   curriculumVersion: number;
+  planStartDate: string;
   tasks: Task[];
   completionRecords: CompletionRecord[];
   /** Personal, plan-local notes keyed by the stable task id. */
@@ -134,13 +135,14 @@ function capacityFor(date: Date, settings: Settings): number {
 export function buildSchedule(
   state: Pick<
     PlannerState,
+    | "planStartDate"
     | "tasks"
     | "completionRecords"
     | "dateOverrides"
     | "extraCapacity"
     | "settings"
   >,
-  start = dateKey(),
+  start = state.planStartDate ?? dateKey(),
 ): ScheduleEntry[] {
   const completed = new Map(
     state.completionRecords.map((record) => [
@@ -272,6 +274,7 @@ export function createInitialState(): PlannerState {
   const base: PlannerState = {
     initialized: false,
     curriculumVersion: 2,
+    planStartDate: dateKey(),
     tasks: CURRICULUM,
     completionRecords: [],
     notesByTaskId: {},

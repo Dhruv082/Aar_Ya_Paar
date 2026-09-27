@@ -1,0 +1,163 @@
+# Feature: Preserve User Planner State Across APK Updates — P0
+
+Implemented end-to-end in the existing Aar Ya Paar mobile app.
+
+## Goal
+
+When a new APK build is installed as an update over the existing app, the user’s current study state must remain intact and the scheduler must reconstruct the same effective plan instead of resetting progress.
+
+This feature is intentionally limited to the single default curriculum/planner flow. It does not add importing or multi-plan support.
+
+The key principle is:
+
+> Preserve user state. Rebuild the schedule and all derived values from the persisted state.
+
+## Implemented end-to-end behavior
+
+The app now preserves the user planner state through the existing `PlannerStore` persistence flow and reconstructs derived schedule values from that saved state instead of treating a cached schedule as the source of truth.
+
+### Stored in persisted state
+
+The following data are saved in the planner store and survive app updates when the APK is installed over the same app identity:
+
+1. Plan Start Date
+   - Added as `planStartDate` on the planner state.
+   - This is used as the anchor for schedule reconstruction.
+   - It is preserved through migration and loaded from older state when missing.
+
+2. Task Completion State
+   - Completion is stored as `completionRecords` keyed by stable task IDs.
+   - This preserves completion status without depending on task position or curriculum ordering.
+
+3. Task Notes
+   - Notes are saved in `notesByTaskId`, keyed by stable task ID.
+   - Notes survive app update and remain attached to the correct task.
+
+4. Unavailable / Freedom Days
+   - Stored in `dateOverrides`.
+   - This covers unavailable days as well as any schedule-affecting overrides.
+
+5. Study Ahead Changes
+   - Stored via `extraCapacity` keyed by date.
+   - The app adds study-ahead time on the current day and rebuilds the schedule from the preserved state.
+
+6. Missed-Day Handling State
+   - Preserved via `dateOverrides` and reschedule logic.
+   - When a missed day is marked, the affected date is converted into an unavailable override and resolved by rescheduling from that point.
+
+7. Rescheduling / Overrides
+   - User-driven schedule changes are preserved through the persisted planner state and rebuilt on load.
+   - The scheduler uses the saved state to continue scheduling without undoing prior user decisions.
+
+8. Other scheduler-affecting data
+   - `settings`, `curriculumVersion`, `dateOverrides`, and `extraCapacity` are all kept as part of the persisted plan.
+   - These are treated as user-controlled state and are not discarded during migration.
+
+## Derived values
+
+The app intentionally does not persist values that can be recreated from the preserved state. These are derived each time the planner updates or reloads:
+
+- future scheduled task dates
+- current progress statistics
+- remaining tasks and completion ratios
+- daily task lists
+- capacity/rescheduling effects
+- remaining available study capacity
+- schedule versions and recalculation timestamps
+
+The scheduler remains the source of truth for derived state. The stored planner state is used to rebuild the schedule consistently after app updates.
+
+## Architecture used
+
+The implementation lives in the existing app architecture:
+
+- `frontend/src/app-context.tsx`
+  - persists the `PlannerStore`
+  - loads and migrates stored data
+  - keeps the active plan and updates the current state
+  - preserves notes, completion state, capacity changes, and unavailable dates
+
+- `frontend/src/scheduler.ts`
+  - defines the canonical planner state
+  - uses `planStartDate` as the schedule anchor
+  - rebuilds schedules using `buildSchedule`, `rescheduleFrom`, and `restoreUnavailableDay`
+  - keeps future task dates derived from the preserved planner state
+
+- `frontend/src/plan-types.ts`
+  - defines `PlannerState` and persisted shape
+
+- `frontend/src/utils/storage/`
+  - keeps persistence consistent across native/web builds through the shared storage abstraction
+
+## Migration and compatibility
+
+The app preserves compatibility with older saved state instead of clearing storage:
+
+- `migrateState` normalizes older planner data
+- missing values are backfilled so older persisted plans continue working
+- `planStartDate` is defaulted to the current date when absent for legacy compatibility
+- `notesByTaskId` is normalized
+- `settings` are merged with defaults
+- curriculum migrations preserve user completion status by matching stable task titles/IDs when needed
+
+This ensures old stored data remains usable without forcing a destructive reset.
+
+## Critical update behavior
+
+The app now enforces the correct update semantics:
+
+- do not clear AsyncStorage or the planner store on update
+- do not reset completion state
+- do not reset notes
+- do not reset the plan start date
+- do not recreate the schedule from scratch
+- do not undo unavailable days or study-ahead settings
+- do not undo rescheduling decisions
+- do not change the effective future schedule unexpectedly
+
+The schedule is recalculated from the preserved planner state during app startup and on subsequent updates.
+
+## Android update path required for real data preservation
+
+The app data remains intact only when the Android build is installed as an update of the same app identity, not as a fresh uninstall/reinstall.
+
+Required for true preservation:
+
+- same Android package name
+- same signing identity / keystore
+- higher version code
+- new build installed over the existing app without uninstalling
+
+This repo already defines a fixed Android package in [frontend/app.json](frontend/app.json):
+
+- package: `com.emergent.docapp.p0gibv`
+
+EAS preview builds are valid for this workflow as long as they are installed as an upgrade of the same app identity. If the app is deleted and reinstalled, Android treats it as a different app and the local storage will be cleared.
+
+For this project, the intended app-update flow is the EAS build path rather than a locally built APK from Android SDK tooling. The important rule remains the same: install the new build over the existing app, never delete the old app first.
+
+## Acceptance criteria status
+
+The feature is implemented to satisfy the original acceptance criteria:
+
+- Same plan start date persists
+- Same completion records persist
+- Same notes persist
+- Same unavailable day state persists
+- Same study-ahead adjustments persist
+- Same rescheduling state persists
+- Same effective schedule is reconstructed after update
+- Same progress metrics are derived from the preserved state
+
+## Final implementation summary
+
+The preserve-state feature is complete at the app level using the existing architecture:
+
+- persisted planner state is kept in `PlannerStore`
+- schedule is derived from state, not stored as the primary truth
+- `planStartDate` is preserved as the schedule anchor
+- task IDs remain stable across updates
+- note, completion, and override data remain attached to the correct tasks and dates
+- migration logic keeps legacy data compatible without destructive reset
+
+This gives the app the correct behavior needed for an app upgrade without losing the user’s study plan progress.

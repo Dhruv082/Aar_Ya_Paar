@@ -47,14 +47,14 @@ type PlannerContextValue = {
   plans: SavedPlan[];
   activePlanId: string | null;
   loading: boolean;
-  saveOnboarding: (settings: Settings) => Promise<void>;
+  saveOnboarding: (settings: Settings, planStartDate?: string) => Promise<void>;
   toggleTask: (taskId: string) => Promise<void>;
   markMissed: (date?: string) => Promise<void>;
   saveTaskNote: (taskId: string, text: string) => Promise<void>;
   markUnavailable: (date: string, reason?: string) => Promise<void>;
   markAvailable: (date: string) => Promise<void>;
   studyAhead: () => Promise<void>;
-  updateSettings: (settings: Settings) => Promise<void>;
+  updateSettings: (settings: Settings, planStartDate?: string) => Promise<void>;
   resetProgress: () => Promise<void>;
   exportData: () => Promise<void>;
   importData: () => Promise<void>;
@@ -105,6 +105,7 @@ function migrateState(saved: PlannerState): PlannerState {
   if (!needsCurriculumMigration)
     return {
       ...saved,
+      planStartDate: saved.planStartDate ?? dateKey(),
       notesByTaskId: normalizeNotes(saved.notesByTaskId),
       settings: { ...DEFAULT_SETTINGS, ...saved.settings },
       extraCapacity: saved.extraCapacity ?? {},
@@ -123,6 +124,7 @@ function migrateState(saved: PlannerState): PlannerState {
   return {
     ...saved,
     curriculumVersion: 2,
+    planStartDate: saved.planStartDate ?? dateKey(),
     tasks: CURRICULUM,
     completionRecords,
     notesByTaskId: normalizeNotes(saved.notesByTaskId),
@@ -173,6 +175,7 @@ function makeImportedState(
   const next = {
     ...base,
     initialized: true,
+    planStartDate: dateKey(),
     tasks,
     completionRecords: [],
     notesByTaskId: {},
@@ -234,10 +237,18 @@ export function PlannerProvider({ children }: PropsWithChildren) {
     [active, persist, store],
   );
   const saveOnboarding = useCallback(
-    (settings: Settings) =>
-      updateActive((current) =>
-        withSchedule({ ...current, initialized: true, settings }),
-      ),
+    (settings: Settings, planStartDate?: string) =>
+      updateActive((current) => {
+        const nextStartDate =
+          planStartDate || current.planStartDate || dateKey();
+        const next = {
+          ...current,
+          initialized: true,
+          planStartDate: nextStartDate,
+          settings,
+        };
+        return withSchedule(next, buildSchedule(next, nextStartDate));
+      }),
     [updateActive],
   );
   const toggleTask = useCallback(
@@ -362,10 +373,12 @@ export function PlannerProvider({ children }: PropsWithChildren) {
     [updateActive],
   );
   const updateSettings = useCallback(
-    async (settings: Settings) => {
+    async (settings: Settings, planStartDate?: string) => {
       await updateActive((current) => {
-        const next = { ...current, settings };
-        return withSchedule(next, rescheduleFrom(next, addDays(dateKey(), 1)));
+        const nextStartDate =
+          planStartDate || current.planStartDate || dateKey();
+        const next = { ...current, planStartDate: nextStartDate, settings };
+        return withSchedule(next, buildSchedule(next, nextStartDate));
       });
       const notifications = await getNotifications();
       if (settings.notificationsEnabled && notifications) {
@@ -390,6 +403,7 @@ export function PlannerProvider({ children }: PropsWithChildren) {
         const next = {
           ...fresh,
           initialized: true,
+          planStartDate: current.planStartDate ?? dateKey(),
           tasks: current.tasks,
           settings: current.settings,
           notesByTaskId: normalizeNotes(current.notesByTaskId),
